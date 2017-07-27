@@ -33,7 +33,7 @@ def ReadHeader(data_path): #build arrays to store information from headers, data
             stc_temp[c-1,int(exp_cnt)]=head['TEMPSTR']
             ion_pump[c-1,int(exp_cnt)]=head['IONPUMP']
             exp_cnt+=(1./8.)
-            data.close()
+            #head.close()
     print '-->> Header Data Read'
     print '------------------------------------------'
     print '   Observing Times: obs_times[n_exp]'

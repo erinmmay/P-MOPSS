@@ -5,6 +5,8 @@
 import numpy as np
 import os
 
+import pickle
+
 from astropy.io import fits
 from setup import *
 
@@ -90,7 +92,7 @@ def Extract2D(path):
                     image_full=np.empty([2*ypixels+ygap,4*xpixels+3*xgap])*np.nan
                 #if exp_cnt%10==0:
                 print '           ( SAVED DATA FOR IMAGE ', np.int(exp_cnt), ')'
-    np.savez('SaveData/2DSpec.npz',data=data)
+    pickle.dump('SaveData/2DSpec.npz',data)
     return data
 
 
