@@ -1,0 +1,53 @@
+from setup import *
+#start=datetime.now()
+#print nchips
+import numpy as np
+from astropy.io import fits
+import os
+
+def ReadHeader(data_path): #build arrays to store information from headers, data cubes
+    file_cnt=0
+    for file in os.listdir(data_path):
+        if file.endswith('.fits.gz'):
+            file_cnt+=1
+    n_exp=file_cnt/nchips
+    obs_times=np.empty([n_exp],dtype=str)                  #holds observing dates/times (ONLY SAVED ONCE)
+    elc_noise=np.empty([nchips])                           #holds electron noise
+    airmass=np.empty([n_exp])
+    ccd_temp=np.empty([nchips,n_exp])
+    stc_temp=np.empty([nchips,n_exp])
+    ion_pump=np.empty([nchips,n_exp])   
+    exp_cnt=0
+    for file in os.listdir(data_path):
+        if file.endswith('.fits.gz'):
+            head=fits.open(data_path+file)[0].header
+            #head=data[0].header
+            c=head['CHIP']
+            if exp_cnt%20==0:
+                print np.int((100*exp_cnt)/n_exp),'%'
+            if c==1:
+                obs_times[int(exp_cnt)]=str(head['DATE-OBS']+'T'+head['TIME-OBS'])
+                airmass[int(exp_cnt)]=head['AIRMASS']
+            elc_noise[c-1]=head['ENOISE']
+            ccd_temp[c-1,int(exp_cnt)]=head['TEMPCCD'+str(int(c))]
+            stc_temp[c-1,int(exp_cnt)]=head['TEMPSTR']
+            ion_pump[c-1,int(exp_cnt)]=head['IONPUMP']
+            exp_cnt+=(1./8.)
+            data.close()
+    print '-->> Header Data Read'
+    print '------------------------------------------'
+    print '   Observing Times: obs_times[n_exp]'
+    print '   Object Airmass:  airmass[n_exp]'
+    print '   Read Noise:      elc_noise[chip]'
+    print '   CCD Temperature: ccd_temp[chip,n_exp]'
+    print '   Structure Temp:  stc_temp[chip_n_exp]'
+    print '   Ion Pump Press:  ion_pump[chip_n_exp]'
+    print '------------------------------------------'
+    np.savez('SaveData/'+'HeaderData.npz',n_exp=n_exp,obs_times=obs_times,airmass=airmass,elc_noise=elc_noise,ccd_temp=ccd_temp,stc_temp=stc_temp,ion_pump=ion_pump)
+    del obs_times
+    del airmass
+    del elc_noise
+    del ccd_temp
+    del stc_temp
+    del ion_pump
+    #print 'TIME TO RUN: ', end-start
