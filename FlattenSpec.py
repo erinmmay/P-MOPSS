@@ -22,7 +22,7 @@ def FlattenSpec():
         print '-----------------'
         print '  OBJECT # ', i
         print '-----------------'
-        obj_data=(np.load('SaveData/2DSpec_obj'+str(int(i))+'.npz'))['data']
+        obj_data=(np.load('SaveData/Corrected'+str(int(i))+'.npz'))['data']
         sub_bkgd=np.zeros_like(obj_data)*np.nan
         mask=(np.load('SaveData/FinalMasks.npz')['masks'])[i,:]
         y0=int(mask[1])
@@ -52,6 +52,20 @@ def FlattenSpec():
                     fwhm_ar[t,j]=2*np.sqrt(2*np.log(2))*g_param[2]
                     cent_ar[t,j]=int(g_param[1])
                     sub_bkgd[t,j,:]=row_data-background
+                    #if t%10==0 and j%100==0:
+                    #    plt.figure(1)
+                    #    plt.clf()
+                    #    plt.cla()
+                    #    plt.plot(xpix_ar,row_data,color='black',linewidth=4.0)
+                    #    plt.plot(xpix_ar,Gaussian(xpix_ar,*g_param),color='orange',linewidth=2.0,linestyle='-')
+                    #    plt.plot(xpix_ar,background,color='blue',linewidth=2.0,linestyle='--')
+                    #    plt.axvline(x=cent_ar[t,j],color='red',linewidth=1.5)
+                    #    plt.axvline(x=cent_ar[t,j]-fwhm_ar[t,j], color='green',linestyle='--',linewidth=0.5)
+                    #    plt.axvline(x=cent_ar[t,j]+fwhm_ar[t,j], color='green',linestyle='--',linewidth=0.5)
+                    #    plt.axvline(x=cent_ar[t,j]-3.*fwhm_ar[t,j], color='darkgreen',linestyle='--',linewidth=1.5)
+                    #    plt.axvline(x=cent_ar[t,j]+3.*fwhm_ar[t,j], color='darkgreen',linestyle='--',linewidth=1.5)
+                    #    plt.figtext(0.1,0.9,str(int(i))+' '+str(int(t))+' '+str(int(j)))
+                    #    plt.show(block=False)
             fwhm_av[t]=int(np.nanmedian(fwhm_ar[t,:]))
             if t%10==0:
                 print '       -- SUMMING APERTURE'
@@ -72,19 +86,6 @@ def FlattenSpec():
         plt.xlabel('Stitched Pixels')
         plt.ylabel('ADUs')
         plt.show(block=False)
-                #plt.figure(2)
-                #plt.clf()
-                #plt.cla()
-                #plt.plot(xpix_ar,row_data,color='black',linewidth=4.0)
-                #plt.plot(xpix_ar,Gaussian(xpix_ar,*g_param),color='orange',linewidth=2.0,linestyle='-')
-                #plt.plot(xpix_ar,background,color='blue',linewidth=2.0,linestyle='--')
-                #plt.axvline(x=cent,color='red',linewidth=1.5)
-                #plt.axvline(x=cent-FWHM, color='green',linestyle='--',linewidth=0.5)
-                #plt.axvline(x=cent+FWHM, color='green',linestyle='--',linewidth=0.5)
-                #plt.axvline(x=cent-3.*FWHM, color='darkgreen',linestyle='--',linewidth=1.5)
-                #plt.axvline(x=cent+3.*FWHM, color='darkgreen',linestyle='--',linewidth=1.5)
-                #plt.figtext(0.1,0.9,str(int(i))+' '+str(int(t))+' '+str(int(j)))
-                #plt.show(block=False)
         print ' '
         time1=datetime.now()
         print'          time to run: ', time1-time0
