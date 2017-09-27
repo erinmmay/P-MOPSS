@@ -1,4 +1,5 @@
 import numpy as np
+np.seterr('ignore')
 import os
 
 from astropy.io import fits
@@ -9,7 +10,7 @@ from setup import *
 top_chip=[6,5,8,7]
 bot_chip=[1,2,3,4]
 
-def MasterFrame(path,kind):
+def MasterFrame(path,kind,SAVEPATH):
     #print ' CHIP ALIGNMENT:'
     #print '---------------------------------'
     #print '|   6   |   5   |   8   |   7   |'
@@ -45,7 +46,7 @@ def MasterFrame(path,kind):
     del full
     print'-->> Saving Calibration Frame Data...'
     print ' '
-    np.savez('SaveData/'+kind+'.npz',medfilt=medfilt)
+    np.savez(SAVEPATH+kind+'.npz',medfilt=medfilt)
     
     return medfilt
 

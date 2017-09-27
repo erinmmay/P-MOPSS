@@ -1,5 +1,6 @@
 ## combine double chips frames to full 8 chip frames ##
 import numpy as np
+np.seterr('ignore')
 
 from setup import *
 

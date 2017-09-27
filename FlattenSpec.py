@@ -1,4 +1,5 @@
 import numpy as np
+np.seterr('ignore')
 from scipy.optimize import curve_fit
 
 import matplotlib.pyplot as plt
@@ -10,10 +11,10 @@ from setup import *
 def Gaussian(x,a,b,c,d):
     return a*np.exp(-((x-b)**2.)/(2.*c**2.))+d
 
-def FlattenSpec():
+def FlattenSpec(ex,SAVEPATH,corr):
     
-    n_obj=int(np.load('SaveData/FinalMasks.npz')['masks'].shape[0])
-    n_exp=np.load('SaveData/HeaderData.npz')['n_exp']
+    n_obj=int(np.load(SAVEPATH+'FinalMasks.npz')['masks'].shape[0])
+    n_exp=np.load(SAVEPATH+'HeaderData.npz')['n_exp']
     
     flat_spec=np.empty([n_obj,n_exp,2*ypixels+ygap])*np.nan
 
@@ -22,9 +23,12 @@ def FlattenSpec():
         print '-----------------'
         print '  OBJECT # ', i
         print '-----------------'
-        obj_data=(np.load('SaveData/Corrected'+str(int(i))+'.npz'))['data']
+        if corr==True:
+            obj_data=(np.load(SAVEPATH+'Corrected'+str(int(i))+'.npz'))['data']
+        if corr==False:
+            obj_data=(np.load(SAVEPATH+'2DSpec_obj'+str(int(i))+'.npz'))['data']
         sub_bkgd=np.zeros_like(obj_data)*np.nan
-        mask=(np.load('SaveData/FinalMasks.npz')['masks'])[i,:]
+        mask=(np.load(SAVEPATH+'FinalMasks.npz')['masks'])[i,:]
         y0=int(mask[1])
         n_rows=obj_data.shape[1]
         xwidth=obj_data.shape[2]
@@ -75,7 +79,8 @@ def FlattenSpec():
                 low=np.nanmax([0,cent_ar[t,j]-3*fwhm_av[t]])
                 up=np.nanmin([cent_ar[t,j]+3*fwhm_av[t],xwidth])
                 #print flat_spec.shape, '     ', i,t,j+y0,j,n_rows
-                flat_spec[i,t,j+y0]=np.sum(sub_bkgd[t,j,int(low):int(up)])
+                y_start=np.int(np.max([0,y0-ex]))
+                flat_spec[i,t,j+y_start]=np.sum(sub_bkgd[t,j,int(low):int(up)])
         plt.figure(2)
         plt.clf()
         plt.cla()
@@ -89,7 +94,7 @@ def FlattenSpec():
         print ' '
         time1=datetime.now()
         print'          time to run: ', time1-time0
-    np.savez('SaveData/FlattenedSpectra.npz',flat_spec=flat_spec,fwhm_ar=fwhm_ar,fwhm_av=fwhm_av,cent_ar=cent_ar)
+    np.savez(SAVEPATH+'FlattenedSpectra.npz',flat_spec=flat_spec,fwhm_ar=fwhm_ar,fwhm_av=fwhm_av,cent_ar=cent_ar)
     return flat_spec
         
     

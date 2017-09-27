@@ -3,6 +3,7 @@
 ##   subtract darks, divide flats                                ##
 ## ------------------------------------------------------------- ##
 import numpy as np
+np.seterr('ignore')
 import os
 
 import cPickle as pickle
@@ -20,15 +21,15 @@ bot_chip=[1,2,3,4]
 
 from FullFrame import FullFrame
 
-def Extract2D(path):
+def Extract2D(path,ex,SAVEPATH):
     print' -->> Loading Masks'
-    masks=np.load('SaveData/FinalMasks.npz')['masks']
+    masks=np.load(SAVEPATH+'FinalMasks.npz')['masks']
     print'          (done)'
 
     n_obj=int(masks.shape[0])
     
     print' -->> Loading Flats'
-    flat=np.load('SaveData/Darks.npz')['medfilt']
+    flat=np.load(SAVEPATH+'Darks.npz')['medfilt']
     flat_full=FullFrame(1,flat)
     flat_full/=np.nanmedian(flat_full)
     print '             ', np.nanmedian(flat_full)                   #checking that flat has been normalized to 1
@@ -37,7 +38,7 @@ def Extract2D(path):
     
 
     print' -->> Loading Darks'
-    dark=np.load('SaveData/Darks.npz')['medfilt']
+    dark=np.load(SAVEPATH+'Darks.npz')['medfilt']
     dark_full=FullFrame(1,dark)/flat_full
     dark_med=np.nanmedian(dark_full)
     print '             ', dark_med                               #checking dark level
@@ -47,13 +48,18 @@ def Extract2D(path):
 
 
     print' -->> Loading HeaderData'
-    n_exp=np.load('SaveData/HeaderData.npz')['n_exp']
+    n_exp=np.load(SAVEPATH+'HeaderData.npz')['n_exp']
     print'              ', n_exp
     print'          (done)'
     
     data={}
     for i in range(0,masks.shape[0]):
-        data['obj'+str(int(i))]=np.empty([n_exp,np.int(np.abs(masks[i,3]-masks[i,1])),np.int(np.abs(masks[i,0]-masks[i,2]))])
+        y0=np.int(masks[i,1])
+        ywid=(np.int(masks[i,3]-masks[i,1]))
+        #print y0, ywid, x0, xwid
+        lowy=np.int(np.max([0,y0-ex]))
+        topy=np.int(np.min([2*ypixels+ygap, y0+ywid+ex]))
+        data['obj'+str(int(i))]=np.empty([n_exp,np.int(topy-lowy),np.int(np.abs(masks[i,0]-masks[i,2]))])
     #data=np.empty([n_obj,n_exp,2*ypixels+ygap,200])*0.0
     
     data_2c=np.empty([2*ypixels+ygap,xpixels])*0.0
@@ -96,7 +102,9 @@ def Extract2D(path):
                     xwid=(np.int(masks[i,2]-masks[i,0]))
                     ywid=(np.int(masks[i,3]-masks[i,1]))
                     #print y0, ywid, x0, xwid
-                    (data['obj'+str(int(i))])[np.int(exp_cnt)-1,:,:]=image_full[y0:y0+ywid,x0:x0+xwid]
+                    lowy=np.int(np.max([0,y0-ex]))
+                    topy=np.int(np.min([2*ypixels+ygap, y0+ywid+ex]))
+                    (data['obj'+str(int(i))])[np.int(exp_cnt)-1,:,:]=image_full[lowy:topy,x0:x0+xwid]
                     #fig,ax=plt.subplots(1,2,figsize=(2.,4.))
                     #ax[0].contourf((data['obj'+str(int(i))])[np.int(exp_cnt)-1,:,:],cmap=plt.cm.Greys_r)
                     #ax[1].contourf((data['obj'+str(int(i))])[np.int(exp_cnt)-2,:,:],cmap=plt.cm.Greys_r)
@@ -107,7 +115,7 @@ def Extract2D(path):
     for k in range(0,n_obj):
         save=data['obj'+str(int(k))]
         #print k, np.nanmedian(save)
-        np.savez('SaveData/2DSpec_obj'+str(int(k))+'.npz', data=save)
+        np.savez(SAVEPATH+'2DSpec_obj'+str(int(k))+'.npz', data=save)
     return data
 
 

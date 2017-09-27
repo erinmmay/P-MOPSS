@@ -1,6 +1,7 @@
 from setup import *
 
 import numpy as np
+np.seterr('ignore')
 
 from astropy.io import fits
 
@@ -23,7 +24,8 @@ x_arr=np.linspace(0,xpixels,xpixels)
 X,Y=np.meshgrid(x_arr,y_arr)
 
 
-def FindMasks(flat_path,root_flat,flat_thres):
+def FindMasks(flat_path,root_flat,flat_thres,SAVEPATH):
+    BOXES=np.array([])
     print ' CHIP ALIGNMENT:'
     print '---------------------------------'
     print '|   6   |   5   |   8   |   7   |'
@@ -51,26 +53,53 @@ def FindMasks(flat_path,root_flat,flat_thres):
 
         paths=cs.collections[0].get_paths()
         for i in range(0,len(paths)):
-            p0=(cs.collections[0].get_paths()[i])
+            p0=(paths[i])
             bbox=p0.get_extents()
             if np.abs((bbox.get_points()[0,0])-(bbox.get_points()[1,0]))> 190.:
+                middle_of_box=(bbox.get_points()[0,0]+bbox.get_points()[1,0])/2.
+                #print 'BOX #',i
+                #print '   ----> MIDDLE OF BOX:', middle_of_box
+                #print '   ----> WIDTH actual:', np.abs(bbox.get_points()[0,0]-bbox.get_points()[1,0])
+                #print '   ----> LEFT OF BOX (actual, estimated)', bbox.get_points()[0,0],middle_of_box-width/2.
+                #print '   ----> RIGHT OF BOX (actual, estimated)', bbox.get_points()[1,0],middle_of_box+width/2.
+                
                 #ax.add_patch(patches.PathPatch(p0, facecolor='none', ec='yellow', linewidth=2, zorder=50))
                 #plt.show(block=False)
+                #bbox.get_points[0,0]=MIN_x, [0,1]=MIN_y, [1,0]=MAX_x, [1,1]=MAX_y
+                x0,y0,x1,y1=middle_of_box-width/2.,bbox.get_points()[0,1],middle_of_box+width/2.,bbox.get_points()[1,1]
+                if top_chip[c]==6:
+                    x0=x0
+                    x1=x1
+                if top_chip[c]==5:
+                    x0=x0+(xpixels+xgap)
+                    x1=x1+(xpixels+xgap)
+                if top_chip[c]==8:
+                    x0=x0+2.*(xpixels+xgap)
+                    x1=x1+2.*(xpixels+xgap)
+                if top_chip[c]==7:
+                    x0=x0+3.*(xpixels+xgap)
+                    x1=x1+3.*(xpixels+xgap)
+                BOXES_item=Bbox(np.array([[x0,y0],[x1,y1]]))
+                BOXES=np.append(BOXES,BOXES_item)
                 for y in range(0,2*ypixels+ygap):
                     if y>bbox.get_points()[0,1] and y<bbox.get_points()[1,1]:
                         for x in range(0,xpixels):
-                            if x>bbox.get_points()[0,0] and x<bbox.get_points()[1,0]:
+                            #if x>bbox.get_points()[0,0] and x<bbox.get_points()[1,0]:
+                            if x>middle_of_box-width/2. and x<middle_of_box+width/2.:
                                 masks[c,y,x]=1.0
         ax[1].imshow(masks[c,:,:], cmap=plt.cm.Greys_r, interpolation='none')
         ax[1].set_title('Generated Masks')
         plt.show(block=False)
     for x in range(ypixels,ypixels+ygap):
         masks[:,y,:]=np.nan
-    np.savez('SaveData/Masks.npz',Masks=masks,paths=paths)
+    #print BOXES
+    BOXES=np.reshape(BOXES,(len(BOXES)/4,4))
+    #print mask_edges
+    np.savez(SAVEPATH+'Masks.npz',Masks=masks,paths=paths,boxes=BOXES)
     return masks
 
-def CombineMasks(mask_full):
-    import matplotlib.patches as patches
+def CombineMasks(mask_full,SAVEPATH):
+#    import matplotlib.patches as patches
     y_arr_f=np.linspace(0,2*ypixels+ygap,2*ypixels+ygap)
     x_arr_f=np.linspace(0,4*xpixels+3*xgap,4*xpixels+3*xgap)
     X,Y=np.meshgrid(x_arr_f,y_arr_f)
@@ -90,12 +119,15 @@ def CombineMasks(mask_full):
     plt.axvline(x=3*xpixels+2*xgap,color='yellow')
     plt.axvline(x=3*xpixels+3*xgap,color='yellow')
     ####
-    paths=cs.collections[0].get_paths()
+    paths=np.load(SAVEPATH+'Masks.npz')['boxes']#cs.collections[0].get_paths()
     for i in range(0,len(paths)):
         p0=paths[i]
-        bbox=p0.get_extents()
+        #print p0
+        bbox=Bbox(np.array([[p0[0],p0[1]],[p0[2],p0[3]]]))
+        #print bbox
+        #print bbox.get_points
         if np.abs((bbox.get_points()[0,0])-(bbox.get_points()[1,0]))> 190.:
-            ax0.add_patch(patches.PathPatch(p0, facecolor='none', ec='green', linewidth=2, zorder=50))
+            ax0.add_patch(patches.Rectangle((p0[0],p0[1]),p0[2]-p0[0],p0[3]-p0[1], facecolor='none', ec='green', linewidth=2, zorder=50))
     ax0.set_title('Un-Combined Masks, Full Frame')
     plt.show(block=False)
     
@@ -105,27 +137,40 @@ def CombineMasks(mask_full):
     for i in range(0,len(paths)):
         if i in skip_arr:
             continue
+        #print '----->', len(boxes)/4.
         p0=paths[i]
-        bbbox=p0.get_extents()
+        bbbox=Bbox(np.array([[p0[0],p0[1]],[p0[2],p0[3]]]))
+        #bbbox=p0.get_extents()
         #print i, bbox
-        x0,y0,x1,y1=bbbox.get_points()[0,0],bbbox.get_points()[0,1],bbbox.get_points()[1,0],bbbox.get_points()[1,1]
-        if np.abs(y1-ypixels)<20:
-            test_point=[x0+100,y1+2*ygap]
+        x0,y0,x1,y1=p0[0],p0[1],p0[2],p0[3]
+        #test_point=x0+100
+        #if np.abs(y1-ypixels)<20:
+        #    test_point=[x0+100,y1+2*ygap]
             #print test_point
-            for j in range(0,len(paths)):
-                if j==i:
-                    j+=1
-                p1=paths[j]
-                if p1.contains_point(test_point):
-                    #print i,j
+        for j in range(0,len(paths)):
+            if j==i and j<len(paths)-1:
+                j+=1
+            if j==i and j==len(paths):
+                continue
+            p1=paths[j]
+            x01,y01,x11,y11=p1[0],p1[1],p1[2],p1[3]
+                #if p1.contains_point(test_point):
+                #if test_point[0]>x01 and test_point[0]<x11:
+            if (x0>x01 and x0<x11) or (x1>x01 and x1<x11):
+                if np.abs(y1-y01)<2*ygap:
+                #print i,j
                     skip_arr=np.append(skip_arr,j)
-                    bbox1=p1.get_extents()
-                    x01,y01,x11,y11=bbox1.get_points()[0,0],bbox1.get_points()[0,1],bbox1.get_points()[1,0],bbox1.get_points()[1,1]
+                    #bbox1=p1.get_extents()
+                    #x01,y01,x11,y11=bbox1.get_points()[0,0],bbox1.get_points()[0,1],bbox1.get_points()[1,0],bbox1.get_points()[1,1]
                     x0n=np.nanmin([x0,x01])
+                    #print 'Bottom',y01,y11, 'TOP',y0,y1
+                    #print x0,x01,x0n
                     y0n=y0
                     x1n=np.nanmax([x1,x11])
+                    #print x1,x11,x1n
+                    #print '----'
                     y1n=y11
-                    bbbox=Bbox(np.array([[x0n,y0n],[x1,y1n]]))
+                    bbbox=Bbox(np.array([[x0n,y0n],[x1n,y1n]]))
                 #elif not p1.contains_point(test_point):
                 #    bbox_new=bbbox
         #else:
@@ -161,7 +206,7 @@ def CombineMasks(mask_full):
         ax1.annotate(i,xy=(x0+100,y1-500),ha='center',va='center',fontsize=8,color='red',zorder=51)
     ax1.set_title('Combined Masks, Full Frame')
     plt.show(block=False)
-    np.savez('SaveData/CombinedMasks.npz',mask_edges=mask_edges,boxes=boxes)
+    np.savez(SAVEPATH+'CombinedMasks.npz',mask_edges=mask_edges,boxes=boxes)
     return(mask_edges)
 
        

@@ -1,4 +1,6 @@
 import numpy as np
+np.seterr('ignore')
+
 import scipy
 from scipy.signal import medfilt
 
@@ -15,15 +17,15 @@ def medcalc(obj_data,t,n_exp):
         med=np.nanmedian([dn2,dn1,up1,up2],axis=0)
     return med
 
-def Outlier(obj,f):
+def Outlier(obj,f,SAVEPATH):
     #n_obj=int(np.load('SaveData/FinalMasks.npz')['masks'].shape[0])
-    n_exp=np.load('SaveData/HeaderData.npz')['n_exp']
+    n_exp=np.load(SAVEPATH+'HeaderData.npz')['n_exp']
     i=obj
     print '-----------------'
     print '  OBJECT # ', i
     print '-----------------'
     print '    --> Loading Data...'
-    obj_data=(np.load('SaveData/2DSpec_obj'+str(int(i))+'.npz'))['data']
+    obj_data=(np.load(SAVEPATH+'2DSpec_obj'+str(int(i))+'.npz'))['data']
     ysize=obj_data.shape[1]
     xsize=obj_data.shape[2]
     # n_exp, y_pixs,x_pixs
@@ -48,8 +50,8 @@ def Outlier(obj,f):
         for y in range(0,ysize):
             for x in range(window,xsize-window):
                 if np.abs(diff[t,y,x]-med_f[t,y,x])>f*win_s[t,y,x]:# or np.abs(diff[t,y,x]-med_r[t,y])>f*row_s[t,y]:
-                    obj_data[t,y,x]=med_f[t,y,x]#np.median(obj_data[t-2:t+2,y,x],0)
-    np.savez('SaveData/Corrected'+str(int(i))+'.npz',data=obj_data)
+                    obj_data[t,y,x]=np.median(obj_data[t-2:t+2,y,x],0)
+    np.savez(SAVEPATH+'Corrected'+str(int(i))+'.npz',data=obj_data)
     del obj_data
     #del diff
     #del med_f
