@@ -24,7 +24,7 @@ x_arr=np.linspace(0,xpixels,xpixels)
 X,Y=np.meshgrid(x_arr,y_arr)
 
 
-def FindMasks(flat_path,root_flat,flat_thres,SAVEPATH):
+def FindMasks(flat_path,root_flat,flat_thres,SAVEPATH,binn):
     BOXES=np.array([])
     print ' CHIP ALIGNMENT:'
     print '---------------------------------'
@@ -55,7 +55,7 @@ def FindMasks(flat_path,root_flat,flat_thres,SAVEPATH):
         for i in range(0,len(paths)):
             p0=(paths[i])
             bbox=p0.get_extents()
-            if np.abs((bbox.get_points()[0,0])-(bbox.get_points()[1,0]))> 190.:
+            if np.abs((bbox.get_points()[0,0])-(bbox.get_points()[1,0]))> 190./binn:
                 middle_of_box=(bbox.get_points()[0,0]+bbox.get_points()[1,0])/2.
                 #print 'BOX #',i
                 #print '   ----> MIDDLE OF BOX:', middle_of_box
@@ -66,7 +66,7 @@ def FindMasks(flat_path,root_flat,flat_thres,SAVEPATH):
                 #ax.add_patch(patches.PathPatch(p0, facecolor='none', ec='yellow', linewidth=2, zorder=50))
                 #plt.show(block=False)
                 #bbox.get_points[0,0]=MIN_x, [0,1]=MIN_y, [1,0]=MAX_x, [1,1]=MAX_y
-                x0,y0,x1,y1=middle_of_box-width/2.,bbox.get_points()[0,1],middle_of_box+width/2.,bbox.get_points()[1,1]
+                x0,y0,x1,y1=middle_of_box-width/(2.*binn),bbox.get_points()[0,1],middle_of_box+width/(2.*binn),bbox.get_points()[1,1]
                 if top_chip[c]==6:
                     x0=x0
                     x1=x1
@@ -85,7 +85,7 @@ def FindMasks(flat_path,root_flat,flat_thres,SAVEPATH):
                     if y>bbox.get_points()[0,1] and y<bbox.get_points()[1,1]:
                         for x in range(0,xpixels):
                             #if x>bbox.get_points()[0,0] and x<bbox.get_points()[1,0]:
-                            if x>middle_of_box-width/2. and x<middle_of_box+width/2.:
+                            if x>middle_of_box-width/(2.*binn) and x<middle_of_box+width/(2.*binn):
                                 masks[c,y,x]=1.0
         ax[1].imshow(masks[c,:,:], cmap=plt.cm.Greys_r, interpolation='none')
         ax[1].set_title('Generated Masks')
@@ -98,7 +98,7 @@ def FindMasks(flat_path,root_flat,flat_thres,SAVEPATH):
     np.savez(SAVEPATH+'Masks.npz',Masks=masks,paths=paths,boxes=BOXES)
     return masks
 
-def CombineMasks(mask_full,SAVEPATH):
+def CombineMasks(mask_full,SAVEPATH,binn):
 #    import matplotlib.patches as patches
     y_arr_f=np.linspace(0,2*ypixels+ygap,2*ypixels+ygap)
     x_arr_f=np.linspace(0,4*xpixels+3*xgap,4*xpixels+3*xgap)
@@ -126,7 +126,7 @@ def CombineMasks(mask_full,SAVEPATH):
         bbox=Bbox(np.array([[p0[0],p0[1]],[p0[2],p0[3]]]))
         #print bbox
         #print bbox.get_points
-        if np.abs((bbox.get_points()[0,0])-(bbox.get_points()[1,0]))> 190.:
+        if np.abs((bbox.get_points()[0,0])-(bbox.get_points()[1,0]))> 190./binn:
             ax0.add_patch(patches.Rectangle((p0[0],p0[1]),p0[2]-p0[0],p0[3]-p0[1], facecolor='none', ec='green', linewidth=2, zorder=50))
     ax0.set_title('Un-Combined Masks, Full Frame')
     plt.show(block=False)
@@ -203,7 +203,7 @@ def CombineMasks(mask_full,SAVEPATH):
     for i in range(0,len(boxes)/4):
         x0,y0,x1,y1=mask_edges[i,0],mask_edges[i,1],mask_edges[i,2],mask_edges[i,3]
         ax1.add_patch(patches.Rectangle((x0,y0),np.abs(x0-x1),np.abs(y0-y1), facecolor='none', ec='cyan', linewidth=2, zorder=50))
-        ax1.annotate(i,xy=(x0+100,y1-500),ha='center',va='center',fontsize=8,color='red',zorder=51)
+        ax1.annotate(i,xy=(x0+100/binn,y1-500/binn),ha='center',va='center',fontsize=8,color='red',zorder=51)
     ax1.set_title('Combined Masks, Full Frame')
     plt.show(block=False)
     np.savez(SAVEPATH+'CombinedMasks.npz',mask_edges=mask_edges,boxes=boxes)

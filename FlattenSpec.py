@@ -17,6 +17,11 @@ def FlattenSpec(ex,SAVEPATH,corr):
     n_exp=np.load(SAVEPATH+'HeaderData.npz')['n_exp']
     
     flat_spec=np.empty([n_obj,n_exp,2*ypixels+ygap])*np.nan
+    pht_err=np.zeros_like(flat_spec)
+    tot_err=np.zeros_like(flat_spec)
+    
+    dark_var=np.load(SAVEPATH+'Darks.npz')['var']
+    flats_var=np.load(SAVEPATH+'Flats.npz')['var']
 
     for i in range(0,n_obj):
         time0=datetime.now()
@@ -36,6 +41,8 @@ def FlattenSpec(ex,SAVEPATH,corr):
         fwhm_ar=np.empty([n_exp,n_rows])
         fwhm_av=np.empty([n_exp])
         cent_ar=np.empty([n_exp,n_rows])
+        bckgrnd=np.empty([2,n_exp,n_rows])
+        
         for t in range(0,n_exp):
             if t%10==0:
                 print '    -->> TIME: ',t
@@ -47,6 +54,7 @@ def FlattenSpec(ex,SAVEPATH,corr):
                     continue
                 bg_params=np.polyfit(np.append(xpix_ar[25:50],xpix_ar[xwidth-50:xwidth-25]),np.append(row_data[25:50],row_data[xwidth-50:xwidth-25]),1)
                 background=(np.poly1d(bg_params))(xpix_ar)
+                bckgrnd[:,t,j]=bg_params
                 p0=np.array([np.nanmax(row_data),np.argmax(row_data),10,background[50]])
                 try:
                     g_param,g_cov=curve_fit(Gaussian,xpix_ar,row_data,p0=p0,maxfev=10000)
@@ -70,17 +78,21 @@ def FlattenSpec(ex,SAVEPATH,corr):
                     #    plt.axvline(x=cent_ar[t,j]+3.*fwhm_ar[t,j], color='darkgreen',linestyle='--',linewidth=1.5)
                     #    plt.figtext(0.1,0.9,str(int(i))+' '+str(int(t))+' '+str(int(j)))
                     #    plt.show(block=False)
-            fwhm_av[t]=int(np.nanmedian(fwhm_ar[t,:]))
+            fwhm_av[t]=(np.nanmedian(fwhm_ar[t,:]))
             if t%10==0:
                 print '       -- SUMMING APERTURE'
             for j in range(0,n_rows):
+                row_data=frame[j,:]
                 if not np.isfinite(row_data[0]):
                     continue
-                low=np.nanmax([0,cent_ar[t,j]-3*fwhm_av[t]])
-                up=np.nanmin([cent_ar[t,j]+3*fwhm_av[t],xwidth])
+                low=np.nanmax([0,cent_ar[t,j]-3*int(fwhm_av[t])])
+                up=np.nanmin([cent_ar[t,j]+3*int(fwhm_av[t]),xwidth])
                 #print flat_spec.shape, '     ', i,t,j+y0,j,n_rows
                 y_start=np.int(np.max([0,y0-ex]))
                 flat_spec[i,t,j+y_start]=np.sum(sub_bkgd[t,j,int(low):int(up)])
+                pht_err[i,t,j+y_start]=np.sqrt(flat_spec[i,t,j+y_start])
+                tot_err[i,t,j+y_start]=np.sqrt((pht_err[i,t,j+y_start])**2.+dark_var)
+                #tot_err[i,t,j+ystart]=np.sqrt((tot_err[i,t,j+ystart]/flat_spec[i,t,j+y_start]
         plt.figure(2)
         plt.clf()
         plt.cla()
@@ -94,7 +106,14 @@ def FlattenSpec(ex,SAVEPATH,corr):
         print ' '
         time1=datetime.now()
         print'          time to run: ', time1-time0
-    np.savez(SAVEPATH+'FlattenedSpectra.npz',flat_spec=flat_spec,fwhm_ar=fwhm_ar,fwhm_av=fwhm_av,cent_ar=cent_ar)
+        if corr==True:
+            np.savez(SAVEPATH+'SpectraFitParams_'+str(int(i))+'_Corr.npz',fwhm=fwhm_ar,fwhm_av=fwhm_av,x=cent_ar,bg=bckgrnd)
+        else:
+            np.savez(SAVEPATH+'SpectraFitParams_'+str(int(i))+'.npz',fwhm=fwhm_ar,fwhm_av=fwhm_av,x=cent_ar,bg=bckgrnd)
+    if corr==True:
+            np.savez(SAVEPATH+'FlattenedSpectra_Corr.npz',flat_spec=flat_spec,fwhm_ar=fwhm_ar,fwhm_av=fwhm_av,cent_ar=cent_ar,pht_err=pht_err,tot_err=tot_err)
+    else:
+            np.savez(SAVEPATH+'FlattenedSpectra.npz',flat_spec=flat_spec,fwhm_ar=fwhm_ar,fwhm_av=fwhm_av,cent_ar=cent_ar,pht_err=pht_err,tot_err=tot_err)
     return flat_spec
         
     

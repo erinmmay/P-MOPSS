@@ -3,6 +3,9 @@ nchips=8
 xpixels=2048
 ypixels=4096
 
+xpixels=xpixels
+ypixels=ypixels
+
 xgap=92
 ygap=57
 

@@ -104,7 +104,9 @@ def Extract2D(path,ex,SAVEPATH):
                     #print y0, ywid, x0, xwid
                     lowy=np.int(np.max([0,y0-ex]))
                     topy=np.int(np.min([2*ypixels+ygap, y0+ywid+ex]))
-                    (data['obj'+str(int(i))])[np.int(exp_cnt)-1,:,:]=image_full[lowy:topy,x0:x0+xwid]
+                    lowx=np.int(np.max([0,x0]))
+                    topx=np.int(np.min([4*xpixels+3*xgap,x0+xwid]))
+                    (data['obj'+str(int(i))])[np.int(exp_cnt)-1,:,:]=image_full[lowy:topy,lowx:topx]
                     #fig,ax=plt.subplots(1,2,figsize=(2.,4.))
                     #ax[0].contourf((data['obj'+str(int(i))])[np.int(exp_cnt)-1,:,:],cmap=plt.cm.Greys_r)
                     #ax[1].contourf((data['obj'+str(int(i))])[np.int(exp_cnt)-2,:,:],cmap=plt.cm.Greys_r)

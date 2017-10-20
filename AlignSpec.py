@@ -9,12 +9,20 @@ from scipy.signal import medfilt
 
 import matplotlib.pyplot as plt
 
+from setup import *
+
+
+
 
 def func_gaus(x,sigma):
     return 1.0-np.exp(-(1./2.)*(x/(sigma))**2.)
 
-def AlignSpec(osr,window,fwhm,wavelength_path,obj_name,SAVEPATH):
-    input_data=np.load(SAVEPATH+'FlattenedSpectra.npz')['flat_spec']
+def AlignSpec(osr,window,fwhm,wavelength_path,obj_name,SAVEPATH,ex,binn,corr):
+    masks=np.load(SAVEPATH+'FinalMasks.npz')['masks']
+    if corr==True:
+        input_data=np.load(SAVEPATH+'FlattenedSpectra_Corr.npz')['flat_spec']
+    else:
+        input_data=np.load(SAVEPATH+'FlattenedSpectra.npz')['flat_spec']
     n_obj=input_data.shape[0]
     n_exp=input_data.shape[1]
     n_pix=input_data.shape[2]
@@ -29,6 +37,7 @@ def AlignSpec(osr,window,fwhm,wavelength_path,obj_name,SAVEPATH):
     shift_pixels=np.empty([n_obj,n_exp,n_pix])
     
     wav_ar=np.empty([n_obj,n_exp,n_pix])
+    
     
     #medfilt_data=medfilt(input_data,kernel_size=[1,1,window])
     #stddev_data=np.empty([n_obj,n_exp,n_pix])
@@ -45,8 +54,8 @@ def AlignSpec(osr,window,fwhm,wavelength_path,obj_name,SAVEPATH):
         print '-----------------'
         print '  OBJECT # ', o
         print '-----------------'
-        if o==1 or o==2 or o==5 or o==7:
-            continue
+        #if o==1 or o==2 or o==5 or o==7:
+        #    continue
         counter=0
         print ' --Filtering...'
         for t in range(0,n_exp):
@@ -83,18 +92,56 @@ def AlignSpec(osr,window,fwhm,wavelength_path,obj_name,SAVEPATH):
             if t%10==0:
                 print '    -->> TIME: ',t,'    pixel shift: ',float(pix_shift)/float(osr)
             shift_pixels[o,t,:]=pix_ar+float(pix_shift)/float(osr)
+            
+            if binn>1:
+                dummy_array=np.empty([n_obj,n_exp,n_pix])
+                dummy_array[o,t,:]=shift_pixels[o,t,:]
+                for d in range(0,n_pix):
+                    if dummy_array[o,t,d]<ypixels:
+                        dummy_array[o,t,d]=dummy_array[o,t,d]*2
+                    if dummy_array[o,t,d]>ypixels:
+                        dummy_array[o,t,d]=(dummy_array[o,t,d]-ygap)*2+ygap
         
         #### wavelength solution ####
+        yflp=2*ypixels+ygap
+        
         if o==0:
             filew=wavelength_path+obj_name+'_out.txt'
             #coeff=np.genfromtxt(wavelength_path+obj_name+'_out.txt',skip_header=4,skip_footer=25,usecols=[1])
+        #else:
+        #    filew=wavelength_path+'Cal'+str(int(o))+'_out.txt'
+            coeff=np.genfromtxt(filew,skip_header=4,skip_footer=25,usecols=[1])
+            new_pix=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[1])
+            cor_wav=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[2])
+            
+            order=len(coeff)-1
+            
+            wav_func=np.poly1d(np.polyfit(new_pix,cor_wav,order))
+            if binn>1:
+                wav_ar[o,:,:]=wav_func(dummy_array[o,:,:])
+            else:
+                wav_ar[o,:,:]=wav_func(shift_pixels[o,:,:])
+            
+            y0_first=np.int(masks[o,1])
+            ywid_fir=(np.int(masks[o,3]-masks[o,1]))
+            lowy_fir=np.int(np.max([0,y0_first-ex]))
+            topy_fir=np.int(np.min([2*ypixels+ygap, y0_first+ywid_fir+ex]))
+            y1_fflip=yflp-lowy_fir
+            y0_fflip=yflp-topy_fir
+            
+            ALL_PIXELS=np.empty([n_obj,len(new_pix)])
+            
+        y0=np.int(masks[o,1])
+        ywid=(np.int(masks[o,3]-masks[o,1]))
+        lowy=np.int(np.max([0,y0-ex]))
+        topy=np.int(np.min([2*ypixels+ygap, y0+ywid+ex]))
     
-        else:
-            filew=wavelength_path+'Cal'+str(int(o))+'_out.txt'
-        coeff=np.genfromtxt(filew,skip_header=4,skip_footer=25,usecols=[1])
-        new_pix=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[1])
-        cor_wav=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[2])
-        wav_func=np.poly1d(np.polyfit(new_pix,cor_wav,1))
+        y1_o=yflp-lowy
+        y0_o=yflp-topy
+    
+        #print y0_fflip-y0_o
+        ALL_PIXELS[o,:]=new_pix-(y0_fflip-y0_o)
+        wav_func=np.poly1d(np.polyfit(ALL_PIXELS[o,:],cor_wav,order))
         wav_ar[o,:,:]=wav_func(shift_pixels[o,:,:])
         
         #interperolated data
@@ -105,5 +152,7 @@ def AlignSpec(osr,window,fwhm,wavelength_path,obj_name,SAVEPATH):
         plt.plot(wav_ar[o,0,:],smooth_data[o,0,:]/np.nanmax(smooth_data[o,0,:]),color='black',linewidth=2.0)
         plt.plot(wav_ar[o,0,:],cnv_data[o,0,:]/np.nanmax(cnv_data[o,0,:]),color='red',linewidth=1.0)
         plt.show()
-    
-    np.savez(SAVEPATH+'ShiftedSpec_All.npz',data=smooth_data,convolved=cnv_data,pixels=shift_pixels,wave=wav_ar)
+    if corr==True:
+        np.savez(SAVEPATH+'ShiftedSpec_All_Corr.npz',data=smooth_data,convolved=cnv_data,pixels=shift_pixels,wave=wav_ar)
+    else:
+        np.savez(SAVEPATH+'ShiftedSpec_All.npz',data=smooth_data,convolved=cnv_data,pixels=shift_pixels,wave=wav_ar)
