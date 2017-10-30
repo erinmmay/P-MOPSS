@@ -153,6 +153,6 @@ def AlignSpec(osr,window,fwhm,wavelength_path,obj_name,SAVEPATH,ex,binn,corr):
         plt.plot(wav_ar[o,0,:],cnv_data[o,0,:]/np.nanmax(cnv_data[o,0,:]),color='red',linewidth=1.0)
         plt.show()
     if corr==True:
-        np.savez(SAVEPATH+'ShiftedSpec_All_Corr.npz',data=smooth_data,convolved=cnv_data,pixels=shift_pixels,wave=wav_ar)
+        np.savez_compressed(SAVEPATH+'ShiftedSpec_All_Corr.npz',data=smooth_data,convolved=cnv_data,pixels=shift_pixels,wave=wav_ar)
     else:
-        np.savez(SAVEPATH+'ShiftedSpec_All.npz',data=smooth_data,convolved=cnv_data,pixels=shift_pixels,wave=wav_ar)
+        np.savez_compressed(SAVEPATH+'ShiftedSpec_All.npz',data=smooth_data,convolved=cnv_data,pixels=shift_pixels,wave=wav_ar)

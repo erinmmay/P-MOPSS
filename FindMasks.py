@@ -95,7 +95,7 @@ def FindMasks(flat_path,root_flat,flat_thres,SAVEPATH,binn):
     #print BOXES
     BOXES=np.reshape(BOXES,(len(BOXES)/4,4))
     #print mask_edges
-    np.savez(SAVEPATH+'Masks.npz',Masks=masks,paths=paths,boxes=BOXES)
+    np.savez_compressed(SAVEPATH+'Masks.npz',Masks=masks,paths=paths,boxes=BOXES)
     return masks
 
 def CombineMasks(mask_full,SAVEPATH,binn):
@@ -206,7 +206,7 @@ def CombineMasks(mask_full,SAVEPATH,binn):
         ax1.annotate(i,xy=(x0+100/binn,y1-500/binn),ha='center',va='center',fontsize=8,color='red',zorder=51)
     ax1.set_title('Combined Masks, Full Frame')
     plt.show(block=False)
-    np.savez(SAVEPATH+'CombinedMasks.npz',mask_edges=mask_edges,boxes=boxes)
+    np.savez_compressed(SAVEPATH+'CombinedMasks.npz',mask_edges=mask_edges,boxes=boxes)
     return(mask_edges)
 
        

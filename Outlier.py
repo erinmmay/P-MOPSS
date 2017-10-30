@@ -51,7 +51,7 @@ def Outlier(obj,f,SAVEPATH):
             for x in range(window,xsize-window):
                 if np.abs(diff[t,y,x]-med_f[t,y,x])>f*win_s[t,y,x]:# or np.abs(diff[t,y,x]-med_r[t,y])>f*row_s[t,y]:
                     obj_data[t,y,x]=np.median(obj_data[t-2:t+2,y,x],0)
-    np.savez(SAVEPATH+'Corrected'+str(int(i))+'.npz',data=obj_data)
+    np.savez_compressed(SAVEPATH+'Corrected'+str(int(i))+'.npz',data=obj_data)
     del obj_data
     #del diff
     #del med_f

@@ -21,7 +21,7 @@ bot_chip=[1,2,3,4]
 
 from FullFrame import FullFrame
 
-def Extract2D(path,ex,SAVEPATH,binn):
+def Extract2D(path,ex,SAVEPATH,binn,Lflat):
     print' -->> Loading Masks'
     masks=np.load(SAVEPATH+'FinalMasks.npz')['masks']
     print'          (done)'
@@ -32,21 +32,22 @@ def Extract2D(path,ex,SAVEPATH,binn):
     if binn!=1:
         flat=np.load(SAVEPATH+'binned_flat.npz')['flat']
     else:
-        flat=(np.load(SAVEPATH+'Flats.npz')['medfilt'])[0,:,:]
-        flat_full=FullFrame(1,flat)
+        flat=(np.load(SAVEPATH+'Flats.npz')['medfilt'])
+        flat_full=FullFrame(1,flat,1)[0,:,:]
         flat_full/=np.nanmedian(flat_full)
         print '             ', np.nanmedian(flat_full)                   #checking that flat has been normalized to 1
     
+        print '               (finding bad pixels in flat...)'
         for i in range(0,flat_full.shape[0]):
-        for j in range(0,flat_full.shape[1]):
-            if flat_full[0,i,j]>1.4 or flat_full[0,i,j]<0.6:
+            for j in range(0,flat_full.shape[1]):
+                if flat_full[i,j]>1.4 or flat_full[i,j]<0.6:
 #            ran=2
 #            mini=np.max([0,i-ran])
 #            maxi=np.min([i+ran,flat_full.shape[0]])
 #            minj=np.max([0,j-ran])
 #            maxj=np.min([j+ran,flat_full.shape[1]])
 #            flat_full[0,i,j]=np.nanmedian(flat_full[0,mini:maxi,minj:maxj])
-                flat_full[0,i,j]=np.nan
+                    flat_full[i,j]=np.nan
     
         del flat
     print'          (done)'
@@ -54,7 +55,10 @@ def Extract2D(path,ex,SAVEPATH,binn):
 
     print' -->> Loading Darks'
     dark=np.load(SAVEPATH+'Darks.npz')['medfilt']
-    dark_full=FullFrame(1,dark)/flat_full
+    if Lflat==True:
+        dark_full=FullFrame(1,dark,binn)[0,:,:]/flat_full
+    else:
+        dark_full=FullFrame(1,dark,binn)
     dark_med=np.nanmedian(dark_full)
     print '             ', dark_med                               #checking dark level
     del dark
@@ -108,7 +112,8 @@ def Extract2D(path,ex,SAVEPATH,binn):
             exp_cnt+=(1./8.)
             if exp_cnt%1==0:
                 #print '  -->> EXPOSURE # ', np.int(exp_cnt), np.nanmedian(image_full)
-                image_full/=flat_full[:,:]
+                if Lflat==True:
+                    image_full/=flat_full[:,:]
                 image_full-=dark_med
                 #print '                     ', np.nanmedian(image_full)
                 for i in range(0,n_obj):
@@ -132,7 +137,7 @@ def Extract2D(path,ex,SAVEPATH,binn):
     for k in range(0,n_obj):
         save=data['obj'+str(int(k))]
         #print k, np.nanmedian(save)
-        np.savez(SAVEPATH+'2DSpec_obj'+str(int(k))+'.npz', data=save)
+        np.savez_compressed(SAVEPATH+'2DSpec_obj'+str(int(k))+'.npz', data=save)
     return data
 
 

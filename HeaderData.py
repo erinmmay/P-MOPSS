@@ -58,7 +58,7 @@ def ReadHeader(data_path,SAVEPATH): #build arrays to store information from head
     print '   Structure Temp:  stc_temp[chip_n_exp]'
     print '   Ion Pump Press:  ion_pump[chip_n_exp]'
     print '------------------------------------------'
-    np.savez(SAVEPATH+'HeaderData.npz',n_exp=n_exp,obs_times=obs_times,airmass=airmass,RA=RA,DEC=DEC,Angle_o=Angle_o,Angle_e=Angle_e,elc_noise=elc_noise,ccd_temp=ccd_temp,stc_temp=stc_temp,ion_pump=ion_pump)
+    np.savez_compressed(SAVEPATH+'HeaderData.npz',n_exp=n_exp,obs_times=obs_times,airmass=airmass,RA=RA,DEC=DEC,Angle_o=Angle_o,Angle_e=Angle_e,elc_noise=elc_noise,ccd_temp=ccd_temp,stc_temp=stc_temp,ion_pump=ion_pump)
     del obs_times
     del airmass
     del elc_noise

@@ -47,7 +47,7 @@ def MasterFrame(path,kind,SAVEPATH,binn):
     print'-->> Saving Calibration Frame Data...'
     print ' '
     variance=np.var(medfilt)
-    np.savez(SAVEPATH+kind+'.npz',medfilt=medfilt,var=variance)
+    np.savez_compressed(SAVEPATH+kind+'.npz',medfilt=medfilt,var=variance)
     
     return medfilt
 

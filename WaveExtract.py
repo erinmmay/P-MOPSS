@@ -124,7 +124,7 @@ def Extract_wave_left(path,ex,exx,SAVEPATH,obj,n_wave):
     n_obj=int(masks.shape[0])
     
     print' -->> Loading Flats'
-    flat=np.load(SAVEPATH+'Darks.npz')['medfilt']
+    flat=np.load(SAVEPATH+'Flats.npz')['medfilt']
     flat_full=FullFrame(1,flat)
     flat_full/=np.nanmedian(flat_full)
     print '             ', np.nanmedian(flat_full)                   #checking that flat has been normalized to 1
@@ -211,7 +211,7 @@ def Extract_wave_left(path,ex,exx,SAVEPATH,obj,n_wave):
     summ=np.nanmedian(summ,axis=0)
     plt.plot(summ)
     plt.show(block=False)
-    np.savez(SAVEPATH+'wavespec_obj'+str(int(obj))+'.npz',spec=np.flip(summ,0))
+    np.savez_compressed(SAVEPATH+'wavespec_obj'+str(int(obj))+'.npz',spec=np.flip(summ,0))
     return summ
 
 def Extract_wave_right(path,ex,exx,SAVEPATH,obj,n_wave):
@@ -223,7 +223,7 @@ def Extract_wave_right(path,ex,exx,SAVEPATH,obj,n_wave):
     n_obj=int(masks.shape[0])
     
     print' -->> Loading Flats'
-    flat=np.load(SAVEPATH+'Darks.npz')['medfilt']
+    flat=np.load(SAVEPATH+'Flats.npz')['medfilt']
     flat_full=FullFrame(1,flat)
     flat_full/=np.nanmedian(flat_full)
     print '             ', np.nanmedian(flat_full)                   #checking that flat has been normalized to 1
@@ -311,7 +311,7 @@ def Extract_wave_right(path,ex,exx,SAVEPATH,obj,n_wave):
     summ=np.nanmedian(summ,axis=0)
     plt.plot(summ)
     plt.show(block=False)
-    np.savez(SAVEPATH+'wavespec_obj'+str(int(obj))+'.npz', spec=np.flip(summ,0))
+    np.savez_compressed(SAVEPATH+'wavespec_obj'+str(int(obj))+'.npz', spec=np.flip(summ,0))
     return summ
 
 
@@ -324,7 +324,7 @@ def Extract_wave_center(path,ex,exx,SAVEPATH,obj,n_wave):
     n_obj=int(masks.shape[0])
     
     print' -->> Loading Flats'
-    flat=np.load(SAVEPATH+'Darks.npz')['medfilt']
+    flat=np.load(SAVEPATH+'Flats.npz')['medfilt']
     flat_full=FullFrame(1,flat)
     flat_full/=np.nanmedian(flat_full)
     print '             ', np.nanmedian(flat_full)                   #checking that flat has been normalized to 1

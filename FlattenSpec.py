@@ -107,13 +107,13 @@ def FlattenSpec(ex,SAVEPATH,corr):
         time1=datetime.now()
         print'          time to run: ', time1-time0
         if corr==True:
-            np.savez(SAVEPATH+'SpectraFitParams_'+str(int(i))+'_Corr.npz',fwhm=fwhm_ar,fwhm_av=fwhm_av,x=cent_ar,bg=bckgrnd)
+            np.savez_compressed(SAVEPATH+'SpectraFitParams_'+str(int(i))+'_Corr.npz',fwhm=fwhm_ar,fwhm_av=fwhm_av,x=cent_ar,bg=bckgrnd)
         else:
-            np.savez(SAVEPATH+'SpectraFitParams_'+str(int(i))+'.npz',fwhm=fwhm_ar,fwhm_av=fwhm_av,x=cent_ar,bg=bckgrnd)
+            np.savez_compressed(SAVEPATH+'SpectraFitParams_'+str(int(i))+'.npz',fwhm=fwhm_ar,fwhm_av=fwhm_av,x=cent_ar,bg=bckgrnd)
     if corr==True:
-            np.savez(SAVEPATH+'FlattenedSpectra_Corr.npz',flat_spec=flat_spec,fwhm_ar=fwhm_ar,fwhm_av=fwhm_av,cent_ar=cent_ar,pht_err=pht_err,tot_err=tot_err)
+            np.savez_compressed(SAVEPATH+'FlattenedSpectra_Corr.npz',flat_spec=flat_spec,fwhm_ar=fwhm_ar,fwhm_av=fwhm_av,cent_ar=cent_ar,pht_err=pht_err,tot_err=tot_err)
     else:
-            np.savez(SAVEPATH+'FlattenedSpectra.npz',flat_spec=flat_spec,fwhm_ar=fwhm_ar,fwhm_av=fwhm_av,cent_ar=cent_ar,pht_err=pht_err,tot_err=tot_err)
+            np.savez_compressed(SAVEPATH+'FlattenedSpectra.npz',flat_spec=flat_spec,fwhm_ar=fwhm_ar,fwhm_av=fwhm_av,cent_ar=cent_ar,pht_err=pht_err,tot_err=tot_err)
     return flat_spec
         
     
