@@ -21,7 +21,7 @@ bot_chip=[1,2,3,4]
 
 from FullFrame import FullFrame
 
-def Extract2D(path,ex,SAVEPATH):
+def Extract2D(path,ex,SAVEPATH,binn):
     print' -->> Loading Masks'
     masks=np.load(SAVEPATH+'FinalMasks.npz')['masks']
     print'          (done)'
@@ -29,11 +29,26 @@ def Extract2D(path,ex,SAVEPATH):
     n_obj=int(masks.shape[0])
     
     print' -->> Loading Flats'
-    flat=np.load(SAVEPATH+'Darks.npz')['medfilt']
-    flat_full=FullFrame(1,flat)
-    flat_full/=np.nanmedian(flat_full)
-    print '             ', np.nanmedian(flat_full)                   #checking that flat has been normalized to 1
-    del flat
+    if binn!=1:
+        flat=np.load(SAVEPATH+'binned_flat.npz')['flat']
+    else:
+        flat=(np.load(SAVEPATH+'Flats.npz')['medfilt'])[0,:,:]
+        flat_full=FullFrame(1,flat)
+        flat_full/=np.nanmedian(flat_full)
+        print '             ', np.nanmedian(flat_full)                   #checking that flat has been normalized to 1
+    
+        for i in range(0,flat_full.shape[0]):
+        for j in range(0,flat_full.shape[1]):
+            if flat_full[0,i,j]>1.4 or flat_full[0,i,j]<0.6:
+#            ran=2
+#            mini=np.max([0,i-ran])
+#            maxi=np.min([i+ran,flat_full.shape[0]])
+#            minj=np.max([0,j-ran])
+#            maxj=np.min([j+ran,flat_full.shape[1]])
+#            flat_full[0,i,j]=np.nanmedian(flat_full[0,mini:maxi,minj:maxj])
+                flat_full[0,i,j]=np.nan
+    
+        del flat
     print'          (done)'
     
 
@@ -58,14 +73,14 @@ def Extract2D(path,ex,SAVEPATH):
         ywid=(np.int(masks[i,3]-masks[i,1]))
         #print y0, ywid, x0, xwid
         lowy=np.int(np.max([0,y0-ex]))
-        topy=np.int(np.min([2*ypixels+ygap, y0+ywid+ex]))
+        topy=np.int(np.min([2*ypixels/binn+ygap, y0+ywid+ex]))
         data['obj'+str(int(i))]=np.empty([n_exp,np.int(topy-lowy),np.int(np.abs(masks[i,0]-masks[i,2]))])
     #data=np.empty([n_obj,n_exp,2*ypixels+ygap,200])*0.0
     
-    data_2c=np.empty([2*ypixels+ygap,xpixels])*0.0
+    data_2c=np.empty([2*ypixels/binn+ygap,xpixels/binn])*0.0
     exp_cnt=0
 
-    image_full=np.empty([2*ypixels+ygap,4*xpixels+3*xgap])*0.0
+    image_full=np.empty([2*ypixels/binn+ygap,4*xpixels/binn+3*xgap])*0.0
     for file in os.listdir(path):
         if file.endswith('.fits.gz'):
             split=file.split('c')
@@ -75,25 +90,25 @@ def Extract2D(path,ex,SAVEPATH):
             if chip in top_chip:
                 c=top_chip.index(chip)
                 #    print '  -->>', root, chip, bot_chip[c]
-                data_t=np.fliplr((fits.open(path+root+'c'+str(int(chip))+'.fits.gz')[0].data)[0:ypixels,0:xpixels])
-                data_b=np.flipud((fits.open(path+root+'c'+str(int(bot_chip[c]))+'.fits.gz')[0].data)[0:ypixels,0:xpixels])
+                data_t=np.fliplr((fits.open(path+root+'c'+str(int(chip))+'.fits.gz')[0].data)[0:ypixels/binn,0:xpixels/binn])
+                data_b=np.flipud((fits.open(path+root+'c'+str(int(bot_chip[c]))+'.fits.gz')[0].data)[0:ypixels/binn,0:xpixels/binn])
                 #print root, c, np.nanmedian(data_t), np.nanmedian(data_b)
-                data_2c[0:ypixels,:]=data_t
-                data_2c[ypixels+ygap:,:]=data_b
+                data_2c[0:ypixels/binn,:]=data_t
+                data_2c[ypixels/binn+ygap:,:]=data_b
                 del data_t
                 del data_b
                 if c==0:
-                    image_full[:,0:xpixels]=data_2c
+                    image_full[:,0:xpixels/binn]=data_2c
                 if c==1:
-                    image_full[:,xpixels+xgap:2*xpixels+xgap]=data_2c
+                    image_full[:,xpixels/binn+xgap:2*xpixels/binn+xgap]=data_2c
                 if c==2:
-                    image_full[:,2*xpixels+2*xgap:3*xpixels+2*xgap]=data_2c
+                    image_full[:,2*xpixels/binn+2*xgap:3*xpixels/binn+2*xgap]=data_2c
                 if c==3:
-                    image_full[:,3*xpixels+3*xgap:]=data_2c
+                    image_full[:,3*xpixels/binn+3*xgap:]=data_2c
             exp_cnt+=(1./8.)
             if exp_cnt%1==0:
                 #print '  -->> EXPOSURE # ', np.int(exp_cnt), np.nanmedian(image_full)
-                image_full/=flat_full[0,:,:]
+                image_full/=flat_full[:,:]
                 image_full-=dark_med
                 #print '                     ', np.nanmedian(image_full)
                 for i in range(0,n_obj):
@@ -103,9 +118,9 @@ def Extract2D(path,ex,SAVEPATH):
                     ywid=(np.int(masks[i,3]-masks[i,1]))
                     #print y0, ywid, x0, xwid
                     lowy=np.int(np.max([0,y0-ex]))
-                    topy=np.int(np.min([2*ypixels+ygap, y0+ywid+ex]))
+                    topy=np.int(np.min([2*ypixels/binn+ygap, y0+ywid+ex]))
                     lowx=np.int(np.max([0,x0]))
-                    topx=np.int(np.min([4*xpixels+3*xgap,x0+xwid]))
+                    topx=np.int(np.min([4*xpixels/binn+3*xgap,x0+xwid]))
                     (data['obj'+str(int(i))])[np.int(exp_cnt)-1,:,:]=image_full[lowy:topy,lowx:topx]
                     #fig,ax=plt.subplots(1,2,figsize=(2.,4.))
                     #ax[0].contourf((data['obj'+str(int(i))])[np.int(exp_cnt)-1,:,:],cmap=plt.cm.Greys_r)
