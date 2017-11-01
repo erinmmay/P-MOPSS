@@ -105,42 +105,44 @@ def AlignSpec(osr,window,fwhm,wavelength_path,obj_name,SAVEPATH,ex,binn,corr):
         #### wavelength solution ####
         yflp=2*ypixels+ygap
         
-        if o==0:
-            filew=wavelength_path+obj_name+'_out.txt'
-            #coeff=np.genfromtxt(wavelength_path+obj_name+'_out.txt',skip_header=4,skip_footer=25,usecols=[1])
+        #if o==0:
+        #    filew=wavelength_path+obj_name+'_out.txt'
+        #    coeff=np.genfromtxt(wavelength_path+obj_name+'_out.txt',skip_header=4,skip_footer=25,usecols=[1])
+        #    new_pix=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[1])
+        #    cor_wav=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[2])
         #else:
-        #    filew=wavelength_path+'Cal'+str(int(o))+'_out.txt'
-            coeff=np.genfromtxt(filew,skip_header=4,skip_footer=25,usecols=[1])
-            new_pix=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[1])
-            cor_wav=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[2])
+        filew=wavelength_path+'Cal_'+str(int(o))+'_out.txt'
+        coeff=np.genfromtxt(filew,skip_header=4,skip_footer=25,usecols=[1])
+        new_pix=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[1])
+        cor_wav=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[2])
             
-            order=len(coeff)-1
+        order=len(coeff)-1
             
-            wav_func=np.poly1d(np.polyfit(new_pix,cor_wav,order))
-            if binn>1:
-                wav_ar[o,:,:]=wav_func(dummy_array[o,:,:])
-            else:
-                wav_ar[o,:,:]=wav_func(shift_pixels[o,:,:])
+        wav_func=np.poly1d(np.polyfit(new_pix,cor_wav,order))
+            #if binn>1:
+            #    wav_ar[o,:,:]=wav_func(dummy_array[o,:,:])
+            #else:
+            #    wav_ar[o,:,:]=wav_func(shift_pixels[o,:,:])
             
-            y0_first=np.int(masks[o,1])
-            ywid_fir=(np.int(masks[o,3]-masks[o,1]))
-            lowy_fir=np.int(np.max([0,y0_first-ex]))
-            topy_fir=np.int(np.min([2*ypixels+ygap, y0_first+ywid_fir+ex]))
-            y1_fflip=yflp-lowy_fir
-            y0_fflip=yflp-topy_fir
+            #y0_first=np.int(masks[o,1])
+            #ywid_fir=(np.int(masks[o,3]-masks[o,1]))
+            #lowy_fir=np.int(np.max([0,y0_first-ex]))
+            #topy_fir=np.int(np.min([2*ypixels+ygap, y0_first+ywid_fir+ex]))
+            #y1_fflip=yflp-lowy_fir
+            #y0_fflip=yflp-topy_fir
             
-            ALL_PIXELS=np.empty([n_obj,len(new_pix)])
+        ALL_PIXELS=np.empty([n_obj,len(new_pix)])
             
-        y0=np.int(masks[o,1])
-        ywid=(np.int(masks[o,3]-masks[o,1]))
-        lowy=np.int(np.max([0,y0-ex]))
-        topy=np.int(np.min([2*ypixels+ygap, y0+ywid+ex]))
+        #y0=np.int(masks[o,1])
+        #ywid=(np.int(masks[o,3]-masks[o,1]))
+        #lowy=np.int(np.max([0,y0-ex]))
+        #topy=np.int(np.min([2*ypixels+ygap, y0+ywid+ex]))
     
-        y1_o=yflp-lowy
-        y0_o=yflp-topy
+        #y1_o=yflp-lowy
+        #y0_o=yflp-topy
     
         #print y0_fflip-y0_o
-        ALL_PIXELS[o,:]=new_pix-(y0_fflip-y0_o)
+        ALL_PIXELS[o,:]=new_pix#-(y0_fflip-y0_o)
         wav_func=np.poly1d(np.polyfit(ALL_PIXELS[o,:],cor_wav,order))
         wav_ar[o,:,:]=wav_func(shift_pixels[o,:,:])
         
@@ -151,6 +153,11 @@ def AlignSpec(osr,window,fwhm,wavelength_path,obj_name,SAVEPATH,ex,binn,corr):
         
         plt.plot(wav_ar[o,0,:],smooth_data[o,0,:]/np.nanmax(smooth_data[o,0,:]),color='black',linewidth=2.0)
         plt.plot(wav_ar[o,0,:],cnv_data[o,0,:]/np.nanmax(cnv_data[o,0,:]),color='red',linewidth=1.0)
+        plt.axvline(x=7593.7,color='grey',linewidth=0.5,linestyle='--')
+        plt.axvline(x=6867.19,color='grey',linewidth=0.5,linestyle='--')
+        plt.axvline(x=6562.81,color='grey',linewidth=0.5,linestyle='--')
+        plt.axvline(x=5895.9,color='grey',linewidth=0.5,linestyle='--')
+        plt.axvline(x=5889.9,color='grey',linewidth=0.5,linestyle='--')
         plt.show()
     if corr==True:
         np.savez_compressed(SAVEPATH+'ShiftedSpec_All_Corr.npz',data=smooth_data,convolved=cnv_data,pixels=shift_pixels,wave=wav_ar)

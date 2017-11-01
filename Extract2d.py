@@ -37,17 +37,17 @@ def Extract2D(path,ex,SAVEPATH,binn,Lflat):
         flat_full/=np.nanmedian(flat_full)
         print '             ', np.nanmedian(flat_full)                   #checking that flat has been normalized to 1
     
-        print '               (finding bad pixels in flat...)'
-        for i in range(0,flat_full.shape[0]):
-            for j in range(0,flat_full.shape[1]):
-                if flat_full[i,j]>1.4 or flat_full[i,j]<0.6:
+        #print '               (finding bad pixels in flat...)'
+        #for i in range(0,flat_full.shape[0]):
+        #    for j in range(0,flat_full.shape[1]):
+        #        if flat_full[i,j]>1.4 or flat_full[i,j]<0.6:
 #            ran=2
 #            mini=np.max([0,i-ran])
 #            maxi=np.min([i+ran,flat_full.shape[0]])
 #            minj=np.max([0,j-ran])
 #            maxj=np.min([j+ran,flat_full.shape[1]])
 #            flat_full[0,i,j]=np.nanmedian(flat_full[0,mini:maxi,minj:maxj])
-                    flat_full[i,j]=np.nan
+         #           flat_full[i,j]=np.nan
     
         del flat
     print'          (done)'
