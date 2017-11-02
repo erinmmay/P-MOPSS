@@ -152,7 +152,7 @@ def Extract_wave_left(path,ex,exx,SAVEPATH,obj,n_wave):
     ywid=(np.int(masks[obj,3]-masks[obj,1]))
     lowy=np.int(np.max([0,y0-ex]))
     topy=np.int(np.min([2*ypixels+ygap, y0+ywid+ex]))
-    summ=np.empty([n_exp,topy-lowy])
+    summ=np.empty([n_exp,2*ypixels+ygap])*np.nan
         #data['obj'+str(int(i))]=np.empty([n_exp,np.int(topy-lowy),np.int(np.abs(masks[i,0]-masks[i,2]))+2*exx])
     #data=np.empty([n_obj,n_exp,2*ypixels+ygap,200])*0.0
     
@@ -201,7 +201,7 @@ def Extract_wave_left(path,ex,exx,SAVEPATH,obj,n_wave):
                 topx=np.int(np.min([4*xpixels+3*xgap,x0+xwid+exx]))
                 xcent=np.int(x0+xwid/2.)
                 for p in range(0,topy-lowy):
-                    summ[np.int(exp_cnt)-1,p]=np.nansum(image_full[p+lowy,x0-45:x0-30])
+                    summ[np.int(exp_cnt)-1,p+lowy]=np.nansum(image_full[p+lowy,lowx+10:x0-10])
                     #fig,ax=plt.subplots(1,2,figsize=(2.,4.))
                     #ax[0].contourf((data['obj'+str(int(i))])[np.int(exp_cnt)-1,:,:],cmap=plt.cm.Greys_r)
                     #ax[1].contourf((data['obj'+str(int(i))])[np.int(exp_cnt)-2,:,:],cmap=plt.cm.Greys_r)
@@ -209,6 +209,10 @@ def Extract_wave_left(path,ex,exx,SAVEPATH,obj,n_wave):
                     #plt.show(block=False)
             #if exp_cnt%10==0:
             #    print '           ( EXTRACTED DATA FOR IMAGE ', np.int(exp_cnt), ')  --   ', n_exp, ' exposures total'
+    for s in range(0,summ.shape[1]):
+        for t in range(0,n_exp):
+            if summ[t,s]<0 or summ[t,s]>5*10**5.:
+                summ[t,s]=np.nan
     summ=np.nanmedian(summ,axis=0)
     plt.plot(summ)
     plt.show(block=False)
@@ -253,7 +257,7 @@ def Extract_wave_right(path,ex,exx,SAVEPATH,obj,n_wave):
         #print y0, ywid, x0, xwid
     lowy=np.int(np.max([0,y0-ex]))
     topy=np.int(np.min([2*ypixels+ygap, y0+ywid+ex]))
-    summ=np.empty([n_exp,topy-lowy])
+    summ=np.empty([n_exp,2*ypixels+ygap])*np.nan
     #data=np.empty([n_obj,n_exp,2*ypixels+ygap,200])*0.0
     
     data_2c=np.empty([2*ypixels+ygap,xpixels])*0.0
@@ -301,7 +305,7 @@ def Extract_wave_right(path,ex,exx,SAVEPATH,obj,n_wave):
                     lowx=np.int(np.max([0,x0-exx]))
                     topx=np.int(np.min([4*xpixels+3*xgap,x0+xwid+exx]))
                     for p in range(0,topy-lowy):
-                        summ[np.int(exp_cnt)-1,p]=np.nansum(image_full[p+lowy,x0+xwid+30:x0+xwid+45])
+                        summ[np.int(exp_cnt)-1,p+lowy]=np.nansum(image_full[p+lowy,x0+xwid+10:topx-10])
                     #fig,ax=plt.subplots(1,2,figsize=(2.,4.))
                     #ax[0].contourf((data['obj'+str(int(i))])[np.int(exp_cnt)-1,:,:],cmap=plt.cm.Greys_r)
                     #ax[1].contourf((data['obj'+str(int(i))])[np.int(exp_cnt)-2,:,:],cmap=plt.cm.Greys_r)
@@ -309,6 +313,10 @@ def Extract_wave_right(path,ex,exx,SAVEPATH,obj,n_wave):
                     #plt.show(block=False)
             #if exp_cnt%10==0:
             #    print '           ( EXTRACTED DATA FOR IMAGE ', np.int(exp_cnt), ')  --   ', n_exp, ' exposures total'
+    for s in range(0,summ.shape[1]):
+        for t in range(0,n_exp):
+            if summ[t,s]<0 or summ[t,s]>5*10**5.:
+                summ[t,s]=np.nan
     summ=np.nanmedian(summ,axis=0)
     plt.plot(summ)
     plt.show(block=False)
@@ -354,7 +362,7 @@ def Extract_wave_center(path,ex,exx,SAVEPATH,obj,n_wave):
         #print y0, ywid, x0, xwid
     lowy=np.int(np.max([0,y0-ex]))
     topy=np.int(np.min([2*ypixels+ygap, y0+ywid+ex]))
-    summ=np.empty([n_exp,2*ypixels+ygap])*0.0
+    summ=np.empty([n_exp,2*ypixels+ygap])*np.nan
     #data=np.empty([n_obj,n_exp,2*ypixels+ygap,200])*0.0
     
     data_2c=np.empty([2*ypixels+ygap,xpixels])*0.0
@@ -411,10 +419,10 @@ def Extract_wave_center(path,ex,exx,SAVEPATH,obj,n_wave):
                     #plt.show(block=False)
             #if exp_cnt%10==0:
             #    print '           ( EXTRACTED DATA FOR IMAGE ', np.int(exp_cnt), ')  --   ', n_exp, ' exposures total'
-    for s in range(0,len(summ)):
+    for s in range(0,summ.shape[1]):
         for t in range(0,n_exp):
-            if summ[t,s]<0 or summ[t,s]>1*10**6.:
-                summ[s]=np.nan
+            if summ[t,s]<0 or summ[t,s]>5*10**5.:
+                summ[t,s]=np.nan
     summ=np.nanmedian(summ,axis=0)
     
     #plt.plot(summ)
