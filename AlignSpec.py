@@ -112,13 +112,20 @@ def AlignSpec(osr,window,fwhm,wavelength_path,obj_name,SAVEPATH,ex,binn,corr):
         #    cor_wav=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[2])
         #else:
         filew=wavelength_path+'Cal_'+str(int(o))+'_out.txt'
-        coeff=np.genfromtxt(filew,skip_header=4,skip_footer=25,usecols=[1])
-        new_pix=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[1])
-        cor_wav=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[2])
+        if o==6 or o==9:
+            ALL_PIXELS[o,:]=ALL_PIXELS[0,:]
+            wav_ar[o,:,:]=wav_ar[0,:,:]
+            print '--------- BAD WAVELENGTH SOLUTION'
             
-        order=len(coeff)-1
             
-        wav_func=np.poly1d(np.polyfit(new_pix,cor_wav,order))
+        else:
+            coeff=np.genfromtxt(filew,skip_header=4,skip_footer=25,usecols=[1])
+            new_pix=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[1])
+            cor_wav=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[2])
+            
+            order=len(coeff)-1
+            
+            #wav_func=np.poly1d(np.polyfit(new_pix,cor_wav,order))
             #if binn>1:
             #    wav_ar[o,:,:]=wav_func(dummy_array[o,:,:])
             #else:
@@ -131,7 +138,7 @@ def AlignSpec(osr,window,fwhm,wavelength_path,obj_name,SAVEPATH,ex,binn,corr):
             #y1_fflip=yflp-lowy_fir
             #y0_fflip=yflp-topy_fir
             
-        ALL_PIXELS=np.empty([n_obj,len(new_pix)])
+            ALL_PIXELS=np.empty([n_obj,len(new_pix)])
             
         #y0=np.int(masks[o,1])
         #ywid=(np.int(masks[o,3]-masks[o,1]))
@@ -142,9 +149,9 @@ def AlignSpec(osr,window,fwhm,wavelength_path,obj_name,SAVEPATH,ex,binn,corr):
         #y0_o=yflp-topy
     
         #print y0_fflip-y0_o
-        ALL_PIXELS[o,:]=new_pix#-(y0_fflip-y0_o)
-        wav_func=np.poly1d(np.polyfit(ALL_PIXELS[o,:],cor_wav,order))
-        wav_ar[o,:,:]=wav_func(shift_pixels[o,:,:])
+            ALL_PIXELS[o,:]=new_pix#-(y0_fflip-y0_o)
+            wav_func=np.poly1d(np.polyfit(ALL_PIXELS[o,:],cor_wav,order))
+            wav_ar[o,:,:]=wav_func(shift_pixels[o,:,:])
         
         #interperolated data
         #for t in range(0,n_exp):

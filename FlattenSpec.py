@@ -35,13 +35,14 @@ def FlattenSpec(ex,SAVEPATH,corr):
         sub_bkgd=np.zeros_like(obj_data)*np.nan
         mask=(np.load(SAVEPATH+'FinalMasks.npz')['masks'])[i,:]
         y0=int(mask[1])
+        y_start=np.max([0,np.int(np.max([0,y0-ex]))])
         n_rows=obj_data.shape[1]
         xwidth=obj_data.shape[2]
         xpix_ar=np.linspace(1,xwidth,xwidth)
-        fwhm_ar=np.empty([n_exp,n_rows])
+        fwhm_ar=np.empty([n_exp,2*ypixels+ygap])
         fwhm_av=np.empty([n_exp])
-        cent_ar=np.empty([n_exp,n_rows])
-        bckgrnd=np.empty([2,n_exp,n_rows])
+        cent_ar=np.empty([n_exp,2*ypixels+ygap])
+        bckgrnd=np.empty([2,n_exp,2*ypixels+ygap])
         
         for t in range(0,n_exp):
             if t%10==0:
@@ -54,15 +55,15 @@ def FlattenSpec(ex,SAVEPATH,corr):
                     continue
                 bg_params=np.polyfit(np.append(xpix_ar[25:50],xpix_ar[xwidth-50:xwidth-25]),np.append(row_data[25:50],row_data[xwidth-50:xwidth-25]),1)
                 background=(np.poly1d(bg_params))(xpix_ar)
-                bckgrnd[:,t,j]=bg_params
+                bckgrnd[:,t,j+y_start]=bg_params
                 p0=np.array([np.nanmax(row_data),np.argmax(row_data),10,background[50]])
                 try:
                     g_param,g_cov=curve_fit(Gaussian,xpix_ar,row_data,p0=p0,maxfev=10000)
                 except RuntimeError:
                     sub_bkgd[t,j,:]=np.empty([len(row_data)])*np.nan
                 else:
-                    fwhm_ar[t,j]=2*np.sqrt(2*np.log(2))*g_param[2]
-                    cent_ar[t,j]=int(g_param[1])
+                    fwhm_ar[t,j+y_start]=2*np.sqrt(2*np.log(2))*g_param[2]
+                    cent_ar[t,j+y_start]=int(g_param[1])
                     sub_bkgd[t,j,:]=row_data-background
                     #if t%10==0 and j%100==0:
                     #    plt.figure(1)
@@ -88,7 +89,6 @@ def FlattenSpec(ex,SAVEPATH,corr):
                 low=np.nanmax([0,cent_ar[t,j]-3*int(fwhm_av[t])])
                 up=np.nanmin([cent_ar[t,j]+3*int(fwhm_av[t]),xwidth])
                 #print flat_spec.shape, '     ', i,t,j+y0,j,n_rows
-                y_start=np.int(np.max([0,y0-ex]))
                 flat_spec[i,t,j+y_start]=np.sum(sub_bkgd[t,j,int(low):int(up)])
                 pht_err[i,t,j+y_start]=np.sqrt(flat_spec[i,t,j+y_start])
                 tot_err[i,t,j+y_start]=np.sqrt((pht_err[i,t,j+y_start])**2.+dark_var)
