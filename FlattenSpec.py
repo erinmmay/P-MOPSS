@@ -35,14 +35,14 @@ def FlattenSpec(ex,SAVEPATH,corr):
         sub_bkgd=np.zeros_like(obj_data)*np.nan
         mask=(np.load(SAVEPATH+'FinalMasks.npz')['masks'])[i,:]
         y0=int(mask[1])
-        y_start=np.max([0,np.int(np.max([0,y0-ex]))])
+        y_start=np.int(np.max([0,y0-ex]))
         n_rows=obj_data.shape[1]
         xwidth=obj_data.shape[2]
         xpix_ar=np.linspace(1,xwidth,xwidth)
-        fwhm_ar=np.empty([n_exp,2*ypixels+ygap])
-        fwhm_av=np.empty([n_exp])
-        cent_ar=np.empty([n_exp,2*ypixels+ygap])
-        bckgrnd=np.empty([2,n_exp,2*ypixels+ygap])
+        fwhm_ar=np.empty([n_exp,2*ypixels+ygap])*np.nan
+        fwhm_av=np.empty([n_exp])*np.nan
+        cent_ar=np.empty([n_exp,2*ypixels+ygap])*np.nan
+        bckgrnd=np.empty([2,n_exp,2*ypixels+ygap])*np.nan
         
         for t in range(0,n_exp):
             if t%10==0:
@@ -89,6 +89,7 @@ def FlattenSpec(ex,SAVEPATH,corr):
                 low=np.nanmax([0,cent_ar[t,j]-3*int(fwhm_av[t])])
                 up=np.nanmin([cent_ar[t,j]+3*int(fwhm_av[t]),xwidth])
                 #print flat_spec.shape, '     ', i,t,j+y0,j,n_rows
+                y_start=np.int(np.max([0,y0-ex]))
                 flat_spec[i,t,j+y_start]=np.sum(sub_bkgd[t,j,int(low):int(up)])
                 pht_err[i,t,j+y_start]=np.sqrt(flat_spec[i,t,j+y_start])
                 tot_err[i,t,j+y_start]=np.sqrt((pht_err[i,t,j+y_start])**2.+dark_var)
