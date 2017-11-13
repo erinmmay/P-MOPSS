@@ -79,7 +79,7 @@ def FlattenSpec(ex,SAVEPATH,corr):
                     #    plt.axvline(x=cent_ar[t,j]+3.*fwhm_ar[t,j], color='darkgreen',linestyle='--',linewidth=1.5)
                     #    plt.figtext(0.1,0.9,str(int(i))+' '+str(int(t))+' '+str(int(j)))
                     #    plt.show(block=False)
-            fwhm_av[t]=(np.nanmedian(fwhm_ar[t,:]))
+            fwhm_av[t]=(np.nanmedian(fwhm_ar[t,y_start:y_start+n_rows]))
             if t%10==0:
                 print '       -- SUMMING APERTURE'
             for j in range(0,n_rows):
@@ -90,7 +90,7 @@ def FlattenSpec(ex,SAVEPATH,corr):
                 up=np.nanmin([cent_ar[t,j]+3*int(fwhm_av[t]),xwidth])
                 #print flat_spec.shape, '     ', i,t,j+y0,j,n_rows
                 y_start=np.int(np.max([0,y0-ex]))
-                flat_spec[i,t,j+y_start]=np.sum(sub_bkgd[t,j,int(low):int(up)])
+                flat_spec[i,t,j+y_start]=np.nansum(sub_bkgd[t,j,int(low):int(up)])
                 pht_err[i,t,j+y_start]=np.sqrt(flat_spec[i,t,j+y_start])
                 tot_err[i,t,j+y_start]=np.sqrt((pht_err[i,t,j+y_start])**2.+dark_var)
                 #tot_err[i,t,j+ystart]=np.sqrt((tot_err[i,t,j+ystart]/flat_spec[i,t,j+y_start]
