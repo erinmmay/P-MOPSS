@@ -17,7 +17,7 @@ from setup import *
 def func_gaus(x,sigma):
     return 1.0-np.exp(-(1./2.)*(x/(sigma))**2.)
 
-def AlignSpec(osr,window,fwhm,wavelength_path,obj_name,SAVEPATH,ex,binn,corr):
+def AlignSpec(osr,window,fwhm,fwhm_t,wavelength_path,obj_name,SAVEPATH,ex,binn,corr):
     masks=np.load(SAVEPATH+'FinalMasks.npz')['masks']
     if corr==True:
         input_data=np.load(SAVEPATH+'FlattenedSpectra_Corr.npz')['flat_spec']
@@ -57,8 +57,9 @@ def AlignSpec(osr,window,fwhm,wavelength_path,obj_name,SAVEPATH,ex,binn,corr):
         #if o==1 or o==2 or o==5 or o==7:
         #    continue
         counter=0
+        
         print ' --Filtering...'
-        for t in range(0,n_exp):
+        for t in range(0+2,n_exp-2):
             if t%10==0:
                 print '    -->> TIME: ',t
             for p in range(0,n_pix):
@@ -72,19 +73,42 @@ def AlignSpec(osr,window,fwhm,wavelength_path,obj_name,SAVEPATH,ex,binn,corr):
         print '       -->>',counter
         for t in range(0,n_exp):
             if t%10==0:
-                plt.plot(np.linspace(0,2*ypixels+ygap,2*ypixels+ygap),flat_spec[i,t,:])
-        plt.figtext(0.2,0.8,'OBJECT '+str(int(i)),fontsize=15,color='red')
+                plt.plot(np.linspace(0,2*ypixels+ygap,2*ypixels+ygap),smooth_data[o,t,:])
+        plt.figtext(0.2,0.8,'OBJECT '+str(int(o)),fontsize=15,color='red')
         plt.xlabel('Stitched Pixels')
         plt.ylabel('ADUs')
         plt.show(block=False)
+        plt.clf()
         
         print ' --Convolving with Gaussian...'
-        sigma=fwhm/2.355
-        width=2.*fwhm
-        width_line=np.linspace(-width/2,width*2.,width)
-        gaus_cnv=func_gaus(width_line,sigma)
+        if fwhm_t==False:
+            sigma=fwhm/2.355
+            width=2.*fwhm
+            width_line=np.linspace(-width/2,width*2.,width)
+            gaus_cnv=func_gaus(width_line,sigma)
+            for t in range(0,n_exp):
+                cnv_data[o,t,:]=convolve(smooth_data[o,t,:],gaus_cnv,'same')
+            
+        else:
+            fwhm_arr=np.load(SAVEPATH+'SpectraFitParams_'+str(int(o))+'.npz')['fwhm_av']
+            fwhm=fwhm_arr[t]
+            
+            for t in range(0,n_exp):
+                fwhm=fwhm_arr[t]
+                sigma=fwhm/2.355
+                width=2.*fwhm
+                width_line=np.linspace(-width/2,width*2.,width)
+                gaus_cnv=func_gaus(width_line,sigma)
+                cnv_data[o,t,:]=convolve(smooth_data[o,t,:],gaus_cnv,'same')
+        
         for t in range(0,n_exp):
-            cnv_data[o,t,:]=convolve(smooth_data[o,t,:],gaus_cnv,'same')
+            if t%10==0:
+                plt.plot(np.linspace(0,2*ypixels+ygap,2*ypixels+ygap),cnv_data[o,t,:])
+        plt.figtext(0.2,0.8,'OBJECT '+str(int(o)),fontsize=15,color='red')
+        plt.xlabel('Stitched Pixels')
+        plt.ylabel('ADUs')
+        plt.show(block=False)
+        plt.clf()
         
         print ' --Oversampling...'
         for t in range(0,n_exp):
