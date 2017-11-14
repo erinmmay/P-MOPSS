@@ -67,9 +67,16 @@ def AlignSpec(osr,window,fwhm,wavelength_path,obj_name,SAVEPATH,ex,binn,corr):
                 median=np.nanmedian(np.append(input_data[o,t,minp:p],input_data[o,t,p+1:maxp]))
                 stdev=np.nanstd(np.append(input_data[o,t,minp:p],input_data[o,t,p+1:maxp]))
                 if np.abs(input_data[o,t,p]-median)>3.*stdev:
-                    smooth_data[o,t,p]=np.nanmedian(input_data[o,t-2:t+2,p])
+                    smooth_data[o,t,p]=np.nanmedian(np.append(input_data[o,t-2,p],input_data[o,t+2,p]))
                     counter+=1
         print '       -->>',counter
+        for t in range(0,n_exp):
+            if t%10==0:
+                plt.plot(np.linspace(0,2*ypixels+ygap,2*ypixels+ygap),flat_spec[i,t,:])
+        plt.figtext(0.2,0.8,'OBJECT '+str(int(i)),fontsize=15,color='red')
+        plt.xlabel('Stitched Pixels')
+        plt.ylabel('ADUs')
+        plt.show(block=False)
         
         print ' --Convolving with Gaussian...'
         sigma=fwhm/2.355

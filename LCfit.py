@@ -151,7 +151,7 @@ def lcfit(SAVEPATH,width,corr,avg,nwalkers,burnin,nsteps,color):
     sys.path.insert(0,SAVEPATH) 
     from SystemCons import *
 
-  
+    fulltime=np.load(SAVEPATH+'Obs_times.npz')['times']
 
     if corr==True:
         if avg==True:
@@ -160,8 +160,8 @@ def lcfit(SAVEPATH,width,corr,avg,nwalkers,burnin,nsteps,color):
             
             lc_data_white=np.load(SAVEPATH+'LCwhite_br_Corr.npz')['avf']
             lc_data_binns=np.load(SAVEPATH+'LC_bins_br_'+str(int(width))+'_Corr.npz')['avf']
-            yerr_white=np.load(SAVEPATH+'LCwhite_br_Corr.npz')['err_t']
-            yerr_binns=np.load(SAVEPATH+'LC_bins_br_'+str(int(width))+'_Corr.npz')['err_t']
+            yerr_white=np.ones_like(lc_data_white)*np.nanmedian(np.load(SAVEPATH+'LCwhite_br_Corr.npz')['err_t'])
+            yerr_binns=np.ones_like(lc_data_binns)*np.nanmedian(np.load(SAVEPATH+'LC_bins_br_'+str(int(width))+'_Corr.npz')['err_t'],axis=0)
             
         else:
             t=np.load(SAVEPATH+'Obs_times.npz')['times']
@@ -173,13 +173,13 @@ def lcfit(SAVEPATH,width,corr,avg,nwalkers,burnin,nsteps,color):
             yerr_binns=np.load(SAVEPATH+'LC_bins_br_'+str(int(width))+'_Corr.npz')['err_t']
     else:
         if avg==True:
-            t=np.load(SAVEPATH+'LCwhite_br_Corr.npz')['avt']
+            t=np.load(SAVEPATH+'LCwhite_br.npz')['avt']
             n_exp=len(t)
             
             lc_data_white=np.load(SAVEPATH+'LCwhite_br.npz')['avf']
             lc_data_binns=np.load(SAVEPATH+'LC_bins_br_'+str(int(width))+'.npz')['avf']
-            yerr_white=np.load(SAVEPATH+'LCwhite_br.npz')['err_t']
-            yerr_binns=np.load(SAVEPATH+'LC_bins_br_'+str(int(width))+'.npz')['err_t']
+            yerr_white=np.ones_like(lc_data_white)*np.nanmedian(np.load(SAVEPATH+'LCwhite_br.npz')['err_t'])
+            yerr_binns=np.ones_like(lc_data_binns)*np.nanmedian(np.load(SAVEPATH+'LC_bins_br_'+str(int(width))+'.npz')['err_t'],axis=0)
             
         else:   
             t=np.load(SAVEPATH+'Obs_times.npz')['times']
@@ -250,8 +250,11 @@ def lcfit(SAVEPATH,width,corr,avg,nwalkers,burnin,nsteps,color):
         sma=sma/Rs
 
         params,m=lc_func(t,t0,per,rp,sma,inc,ecc,w,u,limb_dark)
+        paramsp,mp=lc_func(fulltime,t0,per,rp,sma,inc,ecc,w,u,limb_dark)
         
         fitlightcurve=m.light_curve(params)
+        fitlightcurvep=mp.lightcurve(paramsp)
+        
         residuals=(fitlightcurve-lc_data_white)*10**6.
         chi2=np.nansum(np.abs(residuals/10**6.)**2.)
 
@@ -270,7 +273,7 @@ def lcfit(SAVEPATH,width,corr,avg,nwalkers,burnin,nsteps,color):
         plt.figure()
 #    plt.clf()                                                                                                                                  
         plt.plot(t,lc_data_white,'.',markersize=10,markeredgecolor='black',markerfacecolor='grey')
-        plt.plot(t,fitlightcurve,'-',color='black')
+        plt.plot(fulltime,fitlightcurvep,'-',color='black')
         plt.ylim(0.96,1.01)
         plt.figtext(0.15,0.15,'$\chi^2$ = '+str(chi2))
 #    plt.figtext(0.55,0.60, str(int(bin_wav[b]))+' $\AA$',fontsize=25,color=scal_m.to_rgba(bin_wav[b]))                                         
@@ -297,7 +300,7 @@ def lcfit(SAVEPATH,width,corr,avg,nwalkers,burnin,nsteps,color):
         params=np.array([params.t0,params.per,params.rp,params.a,params.inc,params.u[0],params.u[1]])
         paramserr=np.array([[t0o[1],t0o[2]],[pero[1],pero[2]],[rpo[1],rpo[2]],[inco[1],inco[2]]])
 
-        np.savez_compressed(SAVEPATH+'Fits_'+str(int(width))+'/LightCurve_fits_white.npz',results=runwhite,params=params,paramserr=paramserr,lightcurve_fit=fitlightcurve,residuals=residuals)
+        np.savez_compressed(SAVEPATH+'Fits_'+str(int(width))+'/LightCurve_fits_white.npz',results=runwhite,params=params,paramserr=paramserr,lightcurve_fit=fitlightcurvep,lcfitz=fitlightcurve,residuals=residuals)
     
     
 
@@ -339,8 +342,11 @@ def lcfit(SAVEPATH,width,corr,avg,nwalkers,burnin,nsteps,color):
             u=[c1,c2]
 
             params,m=lc_func(t,t0,per,rp,sma,inc,ecc,w,u,limb_dark)
+            paramsp,mp=lc_func(fulltime,t0,per,rp,sma,inc,ecc,w,u,limb_dark)
     
             fitlightcurve=m.light_curve(params)
+            fitlightcurvep=mp.light_curve(paramsp)
+        
             residuals=(fitlightcurve-lc_data_binns[:,b])*10**6.
             chi2=np.nansum(np.abs(residuals/10**6.)**2.)
 
@@ -359,7 +365,7 @@ def lcfit(SAVEPATH,width,corr,avg,nwalkers,burnin,nsteps,color):
             plt.figure()
 #    plt.clf()                                                                                                                                  
             plt.plot(t,lc_data_binns[:,b],'.',markersize=10,markeredgecolor='black',markerfacecolor=scal_m.to_rgba(bin_ctr[b]))
-            plt.plot(t,fitlightcurve,'-',color='black')
+            plt.plot(fulltime,fitlightcurvep,'-',color='black')
             plt.ylim(0.96,1.01)
             plt.figtext(0.15,0.15,'$\chi^2$ = '+str(chi2))
             plt.figtext(0.55,0.80, str(int(bin_ctr[b]))+' $\AA$',fontsize=25,color=scal_m.to_rgba(bin_ctr[b]))                                         
@@ -384,4 +390,4 @@ def lcfit(SAVEPATH,width,corr,avg,nwalkers,burnin,nsteps,color):
             params=np.array([params.t0,params.per,params.rp,params.a,params.inc,params.u[0],params.u[1]])
             paramserr=np.array([[rpo[1],rpo[2]],[c1o[1],c1o[2]],[c2o[1],c2o[2]]])
 
-            np.savez_compressed(SAVEPATH+'Fits_'+str(int(width))+'/LightCurve_fits_'+str(int(bin_ctr[b]))+'.npz',results=runlam,params=params,paramserr=paramserr,lightcurve_fit=fitlightcurve,residuals=residuals)
+            np.savez_compressed(SAVEPATH+'Fits_'+str(int(width))+'/LightCurve_fits_'+str(int(bin_ctr[b]))+'.npz',results=runlam,params=params,paramserr=paramserr,lightcurve_fit=fitlightcurvep,lcfitz=fitlightcurve,residuals=residuals)

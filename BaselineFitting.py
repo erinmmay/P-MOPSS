@@ -99,6 +99,8 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
 
     ybot=ybot
     ytop=ytop
+    
+    z=avg
 
     time0=np.load(SAVEPATH+'Obs_times.npz')['times']
 
@@ -116,7 +118,7 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
     bin_arr=np.load(SAVEPATH+'Binned_Data_'+str(int(width))+'.npz')['bins']
     bin_ctr=np.load(SAVEPATH+'Binned_Data_'+str(int(width))+'.npz')['bin_centers']
 
-    bin_arr=np.append(bin_arr,[bin_arr[-1]+width,bin_arr[-2]+width])
+    bin_arr=np.append(bin_arr,[bin_arr[-1]+width,bin_arr[-1]+2*width])
     print bin_arr
     
     norm=matplotlib.colors.Normalize(vmin=np.min(bin_arr),vmax=np.max(bin_arr))
@@ -125,6 +127,8 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
     colors=matplotlib.cm.jet
     scal_m=matplotlib.cm.ScalarMappable(cmap=colors,norm=norm)
     scal_m.set_array([])
+    
+    avgF=np.empty([len(time0)/z,len(bin_ctr)])*np.nan
 
     for b in range(0,LC_l.shape[1]):
         if np.isnan(LC_l[2,b])==True:
@@ -135,7 +139,6 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
      
         LCb=LC_l[:,b]
     
-        z=avg
         oot_t0=np.empty([len(time0)/z])
         oot_F0=np.empty([len(time0)/z])
         k=0
@@ -160,6 +163,8 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
 
         new[:,b]=(LCb)/out
     
+        avgF[:,b]=oot_F0/out0
+    
         fig,ax=plt.subplots(1,2,figsize=(10,4))
         ax[0].plot(time0,LCb,'.',markersize=9.,color=scal_m.to_rgba(bin_ctr[b]),alpha=0.2)
         ax[0].plot(oot_t,oot_F,'.',markersize=9.,color=scal_m.to_rgba(bin_ctr[b]+width))
@@ -179,6 +184,6 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
         plt.show()
 
     if corr==True:
-        np.savez_compressed(SAVEPATH+'LC_bins_br_'+str(int(width))+'_Corr.npz',data=new,time=time0,bin_ctr=bin_ctr,err_t=err_t,err_p=err_p,avt=oot_t0,avf=oot_F0/out0)
+        np.savez_compressed(SAVEPATH+'LC_bins_br_'+str(int(width))+'_Corr.npz',data=new,time=time0,bin_ctr=bin_ctr,err_t=err_t,err_p=err_p,avt=oot_t0,avf=avgF)
     else:
-        np.savez_compressed(SAVEPATH+'LC_bins_br_'+str(int(width))+'.npz',data=new,time=time0,bin_ctr=bin_ctr,err_t=err_t,err_p=err_p,avt=oot_t0,avf=oot_F0/out0)
+        np.savez_compressed(SAVEPATH+'LC_bins_br_'+str(int(width))+'.npz',data=new,time=time0,bin_ctr=bin_ctr,err_t=err_t,err_p=err_p,avt=oot_t0,avf=avgF)

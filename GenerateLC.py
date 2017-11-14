@@ -134,8 +134,9 @@ def LCgen_binns(SAVEPATH,width,corr,Cals_ind,csn):
     bin_ctr=np.load(SAVEPATH+'Binned_Data_'+str(int(width))+'.npz')['bin_centers']
     width=bin_arr[1]-bin_arr[0]
 
-    bin_arr=np.append(bin_arr,[bin_arr[-1]+width,bin_arr[-2]+width])
     print bin_arr
+    
+    bin_arr=np.append(bin_arr,[bin_arr[-1]+width,bin_arr[-1]+2*width])
 
     norm=matplotlib.colors.Normalize(vmin=np.min(bin_arr),vmax=np.max(bin_arr))
     #colors=matplotlib.cm.RdYlBu_r
