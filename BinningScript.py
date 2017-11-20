@@ -134,9 +134,12 @@ def BinWhite(DATAFILE,SAVEPATH,start,end):
     plt.close()
     np.savez_compressed(SAVEPATH+'Binned_Data_White.npz',bins=bin_arr,bin_centers=bin_ctr,bin_counts=bin_cnt)
     
-def BinLam(DATAFILE,SAVEPATH,start,end,width):
-    cnt_arr=np.load(DATAFILE)['data']
-    wav_arr=np.load(DATAFILE)['wave']
+def BinLam(data,wave,start,end,width):
+    #cnt_arr=np.load(DATAFILE)['data']
+    #wav_arr=np.load(DATAFILE)['wave']
+    
+    cnt_arr=data
+    wav_arr=wave
     
     cnt_arr=np.flip(cnt_arr,axis=2)
     wav_arr=np.flip(wav_arr,axis=2)
@@ -255,5 +258,6 @@ def BinLam(DATAFILE,SAVEPATH,start,end,width):
         plt.show(block=False)
         plt.pause(2.0)
     plt.close()
-    np.savez_compressed(SAVEPATH+'Binned_Data.npz',bins=bin_arr,bin_centers=bin_ctr,bin_counts=bin_cnt)
+    #np.savez_compressed(SAVEPATH+'Binned_Data.npz',bins=bin_arr,bin_centers=bin_ctr,bin_counts=bin_cnt)
+    return bin_ctr,bin_cnt
     
