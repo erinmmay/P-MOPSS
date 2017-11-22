@@ -17,7 +17,7 @@ from setup import *
 def func_gaus(x,sigma):
     return 1.0-np.exp(-(1./2.)*(x/(sigma))**2.)
 
-def AlignSpec(osr,window,fwhm,fwhm_t,wavelength_path,obj_name,SAVEPATH,ex,binn,corr):
+def AlignSpec(osr,window,fwhm,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn,corr):
     masks=np.load(SAVEPATH+'FinalMasks.npz')['masks']
     if corr==True:
         input_data=np.load(SAVEPATH+'FlattenedSpectra_Corr.npz')['flat_spec']
@@ -46,7 +46,7 @@ def AlignSpec(osr,window,fwhm,fwhm_t,wavelength_path,obj_name,SAVEPATH,ex,binn,c
     #for t in range(2,n_exp-2):
     #    stddev_data[:,t,:]=np.nanstd(input_data[:,t-2:t+2,:])
         
-    smooth_data=input_data
+    #smooth_data=input_data
     #del input_data
     
     #spectral outlier/smoothing function
@@ -58,25 +58,46 @@ def AlignSpec(osr,window,fwhm,fwhm_t,wavelength_path,obj_name,SAVEPATH,ex,binn,c
         #    continue
         counter=0
         
-        print ' --Filtering...'
-        for t in range(0+2,n_exp-2):
-            if t%10==0:
-                print '    -->> TIME: ',t
-            for p in range(0,n_pix):
-                minp=np.max([0,p-window])
-                maxp=np.min([p+window,n_pix])
-                median=np.nanmedian(np.append(input_data[o,t,minp:p],input_data[o,t,p+1:maxp]))
-                stdev=np.nanstd(np.append(input_data[o,t,minp:p],input_data[o,t,p+1:maxp]))
-                if np.abs(input_data[o,t,p]-median)>3.*stdev:
-                    smooth_data[o,t,p]=np.nanmedian(np.append(input_data[o,t-2,p],input_data[o,t+2,p]))
-                    counter+=1
-        print '       -->>',counter
         for t in range(0,n_exp):
             if t%10==0:
-                plt.plot(np.linspace(0,2*ypixels+ygap,2*ypixels+ygap),smooth_data[o,t,:])
+                plt.plot(np.linspace(0,2*ypixels+ygap,2*ypixels+ygap),input_data[o,t,:])
         plt.figtext(0.2,0.8,'OBJECT '+str(int(o)),fontsize=15,color='red')
         plt.xlabel('Stitched Pixels')
         plt.ylabel('ADUs')
+        plt.title('RAW')
+        plt.show(block=False)
+        plt.clf()
+        
+        print ' --Filtering...'
+        for t in range(0+2,n_exp-2):
+            timemedian=medfilt(input_data[o,t,:],kernel_size=ks)
+            data_medsb=input_data[o,t,:]-timemedian
+            data_acmed=np.nanmedian(data_medsb)
+            data_acstd=np.nanstd(data_medsb)
+            if t%10==0:
+                print '    -->> TIME: ',t
+            for p in range(0,n_pix):
+                p=int(p)
+                if data_medsb[p]>data_acmed+olv*data_acstd or data_medsb[p]<data_acmed-olv*data_acstd:
+                    counter+=1
+                    val=timemedian[p]
+                    input_data[o,t,p]=val
+            #smooth_data=input_data
+                #minp=np.max([0,p-window])
+                #maxp=np.min([p+window,n_pix])
+                #median=np.nanmedian(np.append(input_data[o,t,minp:p],input_data[o,t,p+1:maxp]))
+                #stdev=np.nanstd(np.append(input_data[o,t,minp:p],input_data[o,t,p+1:maxp]))
+                #if np.abs(input_data[o,t,p]-median)>3.*stdev:
+                #    smooth_data[o,t,p]=np.nanmedian(np.append(input_data[o,t-2,p],input_data[o,t+2,p]))
+                #    counter+=1
+        print '       -->>',counter
+        for t in range(0,n_exp):
+            if t%10==0:
+                plt.plot(np.linspace(0,2*ypixels+ygap,2*ypixels+ygap),input_data[o,t,:])
+        plt.figtext(0.2,0.8,'OBJECT '+str(int(o)),fontsize=15,color='red')
+        plt.xlabel('Stitched Pixels')
+        plt.ylabel('ADUs')
+        plt.title('FILTERED')
         plt.show(block=False)
         plt.clf()
         
@@ -87,7 +108,7 @@ def AlignSpec(osr,window,fwhm,fwhm_t,wavelength_path,obj_name,SAVEPATH,ex,binn,c
             width_line=np.linspace(-width/2,width*2.,width)
             gaus_cnv=func_gaus(width_line,sigma)
             for t in range(0,n_exp):
-                cnv_data[o,t,:]=convolve(smooth_data[o,t,:],gaus_cnv,'same')
+                cnv_data[o,t,:]=convolve(input_data[o,t,:],gaus_cnv,'same')
             
         else:
             fwhm_arr=np.load(SAVEPATH+'SpectraFitParams_'+str(int(o))+'.npz')['fwhm_av']
@@ -99,7 +120,7 @@ def AlignSpec(osr,window,fwhm,fwhm_t,wavelength_path,obj_name,SAVEPATH,ex,binn,c
                 width=2.*fwhm
                 width_line=np.linspace(-width/2,width*2.,width)
                 gaus_cnv=func_gaus(width_line,sigma)
-                cnv_data[o,t,:]=convolve(smooth_data[o,t,:],gaus_cnv,'same')
+                cnv_data[o,t,:]=convolve(input_data[o,t,:],gaus_cnv,'same')
         
         for t in range(0,n_exp):
             if t%10==0:
@@ -107,6 +128,7 @@ def AlignSpec(osr,window,fwhm,fwhm_t,wavelength_path,obj_name,SAVEPATH,ex,binn,c
         plt.figtext(0.2,0.8,'OBJECT '+str(int(o)),fontsize=15,color='red')
         plt.xlabel('Stitched Pixels')
         plt.ylabel('ADUs')
+        plt.title('CONVOLVED')
         plt.show(block=False)
         plt.clf()
         
@@ -143,7 +165,7 @@ def AlignSpec(osr,window,fwhm,fwhm_t,wavelength_path,obj_name,SAVEPATH,ex,binn,c
         #    cor_wav=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[2])
         #else:
         filew=wavelength_path+'Cal_'+str(int(o))+'_out.txt'
-        if o==6 or o==9:
+        if o==6:
             ALL_PIXELS[o,:]=ALL_PIXELS[0,:]
             wav_ar[o,:,:]=wav_ar[0,:,:]
             print '--------- BAD WAVELENGTH SOLUTION'
@@ -189,7 +211,7 @@ def AlignSpec(osr,window,fwhm,fwhm_t,wavelength_path,obj_name,SAVEPATH,ex,binn,c
         #    inter=interp1d(wav_ar[o,t,:],smooth_data[o,t,:])
         #    int_data[o,t,:]=interp1d(wav_ar[o,t,:],smooth_data[o,t,:])
         
-        plt.plot(wav_ar[o,0,:],smooth_data[o,0,:]/np.nanmax(smooth_data[o,0,:]),color='black',linewidth=2.0)
+        plt.plot(wav_ar[o,0,:],input_data[o,0,:]/np.nanmax(input_data[o,0,:]),color='black',linewidth=2.0)
         plt.plot(wav_ar[o,0,:],cnv_data[o,0,:]/np.nanmax(cnv_data[o,0,:]),color='red',linewidth=1.0)
         plt.axvline(x=7593.7,color='grey',linewidth=0.5,linestyle='--')
         plt.axvline(x=6867.19,color='grey',linewidth=0.5,linestyle='--')
@@ -198,6 +220,6 @@ def AlignSpec(osr,window,fwhm,fwhm_t,wavelength_path,obj_name,SAVEPATH,ex,binn,c
         plt.axvline(x=5889.9,color='grey',linewidth=0.5,linestyle='--')
         plt.show()
     if corr==True:
-        np.savez_compressed(SAVEPATH+'ShiftedSpec_All_Corr.npz',data=smooth_data,convolved=cnv_data,pixels=shift_pixels,wave=wav_ar)
+        np.savez_compressed(SAVEPATH+'ShiftedSpec_All_Corr.npz',data=input_data,convolved=cnv_data,pixels=shift_pixels,wave=wav_ar)
     else:
-        np.savez_compressed(SAVEPATH+'ShiftedSpec_All.npz',data=smooth_data,convolved=cnv_data,pixels=shift_pixels,wave=wav_ar)
+        np.savez_compressed(SAVEPATH+'ShiftedSpec_All.npz',data=input_data,convolved=cnv_data,pixels=shift_pixels,wave=wav_ar)
