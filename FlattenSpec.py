@@ -14,7 +14,7 @@ from setup import *
 def Gaussian(x,a,b,c,d):
     return a*np.exp(-((x-b)**2.)/(2.*c**2.))+d
 
-def FlattenSpec(ex,SAVEPATH,corr):
+def FlattenSpec(ex,SAVEPATH,corr,ed_l,ed_u,ks,ks_a,sd,olv,olv_a,ver):
     
     n_obj=int(np.load(SAVEPATH+'FinalMasks.npz')['masks'].shape[0])
     n_exp=np.load(SAVEPATH+'HeaderData.npz')['n_exp']
@@ -51,37 +51,35 @@ def FlattenSpec(ex,SAVEPATH,corr):
             if t%10==0:
                 print '    -->> TIME: ',t
                 print '       -- FITTING GAUSSIANS'
-            frame=obj_data[t,:,:]
+            frame=np.array(obj_data[t,:,:])
             
-            ed_l=85
-            ed_u=88
-            sd=2
-            ms=5  # MUST BE GREATER THAN SD
-            ks=29#5
-            
-            ms_a=15
-            ks_a=7#5
+            ed_l=ed_l
+            ed_u=ed_u
+            ks=ks
+            ks_a=ks_a
+            sd=sd
 
-            plt.figure(102,figsize=(14,4))
-            plt.clf()
-            plt.cla()
-            plt.title('RAW: OBJ='+str(int(i))+' TIME='+str(int(t)))
-            for j in range(0,n_rows):
-                plt.plot(xpix_ar,frame[j,:],linewidth=1.0)
-            plt.axvline(x=ed_l, color='grey',linewidth=0.5)
-            plt.axvline(x=xwidth-ed_u,color='grey',linewidth=0.5)
-            plt.axvline(x=sd, color='grey',linewidth=0.5)
-            plt.axvline(x=xwidth-sd,color='grey',linewidth=0.5)
-            plt.show(block=False)
+            if ver==True:
+                plt.figure(102,figsize=(14,4))
+                plt.clf()
+                plt.cla()
+                plt.title('RAW: OBJ='+str(int(i))+' TIME='+str(int(t)))
+                for j in range(0,n_rows):
+                    plt.plot(xpix_ar,frame[j,:],linewidth=1.0)
+                plt.axvline(x=ed_l, color='grey',linewidth=0.5)
+                plt.axvline(x=xwidth-ed_u,color='grey',linewidth=0.5)
+                plt.axvline(x=sd, color='grey',linewidth=0.5)
+                plt.axvline(x=xwidth-sd,color='grey',linewidth=0.5)
+                plt.show(block=False)
             
             for j in range(0,n_rows):
-                row_data=frame[j,:]
+                row_data=np.array(frame[j,:])
                 if not np.isfinite(row_data[0]):
                     continue
                
                 bg_pix=np.append(xpix_ar[sd:ed_l],xpix_ar[xwidth-ed_u:xwidth-sd])
-                bg_dat=np.append(row_data[sd:ed_l],row_data[xwidth-ed_u:xwidth-sd])
-               
+                bg_dat=np.array(np.append(row_data[sd:ed_l],row_data[xwidth-ed_u:xwidth-sd]))
+
                 
                 #### doing background outlier rejection ###
                 #print '       -- (outlier bg pixel rejection)'
@@ -106,71 +104,25 @@ def FlattenSpec(ex,SAVEPATH,corr):
                 bg_std=np.nanstd(bg_dat_med)
                 bg_med=np.nanmedian(bg_dat_med)
                 
-
-                        
-               
-               
                 for b in range(0,len(bg_pix)):
                     b=int(b)
-                    if bg_dat_med[b]>3.0*bg_std+bg_med or bg_dat_med[b]<bg_med-3.0*bg_std:
+                    if bg_dat_med[b]>olv*bg_std+bg_med or bg_dat_med[b]<bg_med-olv*bg_std:
                         counter+=1
                         val=bg_dat_meda[b]#bg_dat[b]-bg_dat_med[b]#np.nanmedian(np.append(bg_dat[minx:b-ms],bg_dat[b+1+ms:maxx]))
+                        #if val>olv*bg_std+bg_med or val<bg_med-olv*bg_std:
+                        #    val=bg_dat[b]
                         ind=np.where(xpix_ar==bg_pix[b])
                         bg_dat[b]=val
                         row_data[ind]=val
-                        
-                #for b in range(sd,len(xpix_ar)-sd):
-                #    if b>sd+20 and b<xwidth-sd-20:
-                #        continue
-                #    b=int(b)
-                #    if dat_medft[b]>3.0*dat_std+dat_med or dat_medft[b]<dat_med-3.0*dat_std:
-                #        counter+=1
-                #        
-                #        minx=np.nanmax([sd,b-ms])
-                #        maxx=np.nanmin([b+ms,xwidth-sd])
-                       
-                #        val=dat_medfta[b]#np.nanmedian(np.append(row_data[minx:b-sd],row_data[b+1+sd:maxx]))
-                        #ind=np.where(xpix_ar==bg_pix[b])
-                        #bg_dat[b]=val
-                #        row_data[b]=val
-                        
-                        #plt.figure(105,figsize=(3.,3.))
-                        #plt.clf()
-                        #plt.cla()
-                        #plt.plot(xpix_ar,row_dat,color='black',linewidth=2.0)
-                        #plt.plot(a_pix,gfit,color='cyan',linewidth=1.0)
-                        ##plt.plot(a_pix,a_dat_med,color='cyan',linewidth=1.0)
-                        #plt.title(str(int(i))+' '+str(int(t))+' '+str(int(j)))
-                        #plt.show(block=False)
-                        
-                        #plt.figure(106,figsize=(8.,3.))
-                        #plt.clf()
-                        #plt.cla()
-                        #plt.plot(xpix_ar[minx:maxx],dat_medft[minx:maxx],color='black',linewidth=2.0)
-                        #plt.plot(xpix_ar[minx:maxx],(row_data-dat_medfta)[minx:maxx],color='red',linewidth=1.0)
-                        #plt.axhline(y=dat_med,color='lime')
-                        #plt.axhline(y=dat_med+3*dat_std,color='lime',linestyle='--')
-                        #plt.axhline(y=dat_med-3*dat_std,color='lime',linestyle='--')
-                        ##plt.plot(a_pix,a_dat_med,color='cyan',linewidth=1.0)
-                        #plt.title(str(int(i))+' '+str(int(t))+' '+str(int(j)))
-                        #plt.show(block=False)
-                        
-               
-                  
+
                 if (counter/xwidth)*100.>5.:
                     print 'CAUTION: MORE THAN 5% CORRECTED FOR ROW ',j, '!!!!!'
+                    
                 obj_data[t,j,:]=row_data   #updating with background fix
                 frame[j,:]=row_data
                 
                 bg_params=np.polyfit(bg_pix,bg_dat,1)
                 background=(np.poly1d(bg_params))(xpix_ar)
-                
-                #if j%100==0:
-                #    plt.figure(100)
-                #    plt.plot(bg_pix,bg_dat,color='magenta',linewidth=0.5)
-                #    plt.plot(xpix_ar,background,color='lime',linewidth=0.5,linestyle='--')
-                #    plt.show(block=False)
-                    #plt.pause(0.5)
                 
                 bckgrnd[:,t,j+y_start]=bg_params
                 p0=np.array([np.nanmax(row_data),np.argmax(row_data),10,background[50]])
@@ -178,9 +130,14 @@ def FlattenSpec(ex,SAVEPATH,corr):
                 try:
                     g_param,g_cov=curve_fit(Gaussian,xpix_ar,row_data,p0=p0,maxfev=10000)
                 except RuntimeError:
-                    sub_bkgd[t,j,:]=np.empty([len(row_data)])*np.nan
+                    sub_bkgd[t,j,:]=row_data-background#np.empty([len(row_data)])*np.nan
+                    fwhm_ar[t,j+y_start]=fwhm_ar[t,j+y_start-1]
+                    cent_ar[t,j+y_start]=cent_ar[t,j+y_start-1]
                 else:
                     fwhm_ar[t,j+y_start]=2*np.sqrt(2*np.log(2))*g_param[2]
+                    #if g_param[1]>150 or g_param[1]<50:
+                    #    cent_ar[t,j+y_start]=cent_ar[t,j+y_start-1]
+                    #else:
                     cent_ar[t,j+y_start]=int(g_param[1])
                     sub_bkgd[t,j,:]=row_data-background
                  
@@ -189,7 +146,8 @@ def FlattenSpec(ex,SAVEPATH,corr):
                 #print '       -- (outlier dat pixel rejection)'
                 
                 a_pix=xpix_ar[ed_l:xwidth-ed_u]
-                a_dat=row_data[ed_l:xwidth-ed_u]
+                a_dat=np.array(row_data[ed_l:xwidth-ed_u])
+                a_dat0=np.array(row_data[ed_l:xwidth-ed_u])
                 
                 gfit=Gaussian(a_pix,*g_param)
                 counter=0
@@ -201,61 +159,73 @@ def FlattenSpec(ex,SAVEPATH,corr):
                 a_med=np.nanmedian(a_dat_med)
    
                 
-                for b in range(0,len(a_pix)):
+                for b in range(1,len(a_pix)-2):
                     b=int(b)
-                    olv=3.5
-                    if a_dat_med[b]>olv*a_std+a_med or a_dat_med[b]<a_med-olv*a_std:
+                    olv=olv
+                    if a_dat_med[b]>olv_a*a_std+a_med or a_dat_med[b]<a_med-olv_a*a_std:
                         counter+=1
+                        #a_dat0=a_dat[:]
+                        ind=(np.where(xpix_ar==a_pix[b])[0][0])
                         
-                        fig,ax=plt.subplots(1,3,figsize=(9.,2.))
-                        
-                        ax[0].plot(a_pix,a_dat,color='black',linewidth=2.0)
-                        ax[0].plot(a_pix,gfit,color='cyan',linewidth=1.0)
-                        #plt.plot(a_pix,a_dat_med,color='cyan',linewidth=1.0)
-                        ax[0].set_title(str(int(i))+' '+str(int(t))+' '+str(int(j)))
-                        
-                        val=a_median[b]#a_dat[b]-a_dat_med[b]#np.nanmedian(np.append(bg_dat[minx:b-ms],bg_dat[b+1+ms:maxx]))
-                        ind=np.where(xpix_ar==a_pix[b])
-                        a_dat[b]=val
-                        row_data[ind]=val
-                #  
+                        val=a_median[b-1:b+2]
+                        #if val[1]-gfit[b]>1.5*olv*bg_std+bg_med or val[1]-gfit[b]<bg_med-1.5*olv*bg_std:
+                        #    val=a_dat[b-1:b+2]
+                            #a_dat[b]=a_dat[b]
+                            #row_data[ind]=row_data[ind]
+                        a_dat[b-1:b+2]=val
+                        row_data[ind-1:ind+2]=val
 
-                      
-                #        
-                        ax[1].plot(a_pix,a_dat_med,color='black',linewidth=2.0)
-                        ax[1].plot(a_pix,a_dat-gfit,color='red',linewidth=1.0)
-                        ax[1].axhline(y=a_med,color='lime')
-                        ax[1].axhline(y=a_med+olv*a_std,color='lime',linestyle='--')
-                        ax[1].axhline(y=a_med-olv*a_std,color='lime',linestyle='--')
-                        #plt.plot(a_pix,a_dat_med,color='cyan',linewidth=1.0)
-                        ax[1].set_title(str(int(i))+' '+str(int(t))+' '+str(int(j)))
-                        
-                        
-                        bckgrnd[:,t,j+y_start]=bg_params
+                       
                         p0=g_param
                 
                         try:
-                            g_param,g_cov=curve_fit(Gaussian,xpix_ar,row_data,p0=p0,maxfev=10000)
+                            g_paramn,g_covn=curve_fit(Gaussian,xpix_ar,row_data,p0=p0,maxfev=10000)
                         except RuntimeError:
-                            sub_bkgd[t,j,:]=np.empty([len(row_data)])*0.0
+                            sub_bkgd[t,j,:]=row_data-background#np.empty([len(row_data)])*np.nan
+                            fwhm_ar[t,j+y_start]=fwhm_ar[t,j+y_start-1]
+                            cent_ar[t,j+y_start]=cent_ar[t,j+y_start-1]
                         else:
-                            fwhm_ar[t,j+y_start]=2*np.sqrt(2*np.log(2))*g_param[2]
-                            cent_ar[t,j+y_start]=int(g_param[1])
+                            fwhm_ar[t,j+y_start]=2*np.sqrt(2*np.log(2))*g_paramn[2]
+                            #print cent_ar[t,j+y_start],int(g_paramn[1])
+                            #if g_paramn[1]>150 or g_paramn[1]<50:
+                            #    cent_ar[t,j+y_start]=cent_ar[t,j+y_start-1]
+                            #else:
+                            cent_ar[t,j+y_start]=int(g_paramn[1])
                             sub_bkgd[t,j,:]=row_data-background
                             
-                        gfit=Gaussian(a_pix,*g_param)
-                        a_dat=row_data[ed_l:xwidth-ed_u]
-                       
-                            
-                        ax[2].plot(a_pix,a_dat,color='black',linewidth=2.0)
-                        ax[2].plot(a_pix,gfit,color='cyan',linewidth=1.0)
-                        #plt.plot(a_pix,a_dat_med,color='cyan',linewidth=1.0)
-                        ax[2].set_title(str(int(i))+' '+str(int(t))+' '+str(int(j)))
+                        gfitn=Gaussian(a_pix,*g_param)
                         
-                        plt.show(block=False)
+                        if ver==True:
+                            fig,ax=plt.subplots(1,3,figsize=(9.,2.))
+                            
+                        
+                            ax[0].plot(a_pix,a_dat0,color='black',linewidth=2.0)
+                            ax[0].plot(a_pix,gfit,color='cyan',linewidth=1.0)
+                            #plt.plot(a_pix,a_dat_med,color='cyan',linewidth=1.0)
+                            ax[0].set_title(str(int(i))+' '+str(int(t))+' '+str(int(j)))
+
+                            ax[1].plot(a_pix,a_dat_med,color='black',linewidth=2.0)
+                            ax[1].plot(a_pix,a_dat-gfit,color='red',linewidth=1.0)
+                            ax[1].axhline(y=a_med,color='lime')
+                            ax[1].axhline(y=a_med+olv_a*a_std,color='lime',linestyle='--')
+                            ax[1].axhline(y=a_med-olv_a*a_std,color='lime',linestyle='--')
+                            ax[1].axhline(y=a_med+1.5*olv_a*a_std,color='green',linestyle='--')
+                            ax[1].axhline(y=a_med-1.5*olv_a*a_std,color='green',linestyle='--')
+                            #plt.plot(a_pix,a_dat_med,color='cyan',linewidth=1.0)
+                            ax[1].set_title(str(int(i))+' '+str(int(t))+' '+str(int(j)))
+   
+                            ax[2].plot(a_pix,a_dat,color='black',linewidth=2.0)
+                            ax[2].plot(a_pix,gfitn,color='cyan',linewidth=1.0)
+                            #plt.plot(a_pix,a_dat_med,color='cyan',linewidth=1.0)
+                            ax[2].set_title(str(int(i))+' '+str(int(t))+' '+str(int(j+y_start)))
+                        
+                            plt.show(block=False)
                         
                 if (counter/xwidth)*100.>5.:
                     print 'CAUTION: MORE THAN 5% CORRECTED FOR ROW ',j, '!!!!!'
+                    
+                obj_data[t,j,:]=row_data   #updating with data fix
+                frame[j,:]=row_data
                 
                     #if t%10==0 and j%100==0:
                     #    plt.figure(1)
@@ -273,17 +243,18 @@ def FlattenSpec(ex,SAVEPATH,corr):
                     #    plt.show(block=False)
             fwhm_av[t]=(np.nanmedian(fwhm_ar[t,y_start:y_start+n_rows]))
             
-            plt.figure(103,figsize=(14,4))
-            plt.clf()
-            plt.cla()
-            plt.title('FIXED: OBJ='+str(int(i))+' TIME='+str(int(t)))
-            for j in range(0,n_rows):
-                plt.plot(xpix_ar,frame[j,:],linewidth=1.0)
-            plt.axvline(x=ed_l, color='grey',linewidth=0.5)
-            plt.axvline(x=xwidth-ed_u,color='grey',linewidth=0.5)
-            plt.axvline(x=sd, color='grey',linewidth=0.5)
-            plt.axvline(x=xwidth-sd,color='grey',linewidth=0.5)
-            plt.show(block=False)
+            if ver==True:
+                plt.figure(103,figsize=(14,4))
+                plt.clf()
+                plt.cla()
+                plt.title('FIXED: OBJ='+str(int(i))+' TIME='+str(int(t)))
+                for j in range(0,n_rows):
+                    plt.plot(xpix_ar,frame[j,:],linewidth=1.0)
+                plt.axvline(x=ed_l, color='grey',linewidth=0.5)
+                plt.axvline(x=xwidth-ed_u,color='grey',linewidth=0.5)
+                plt.axvline(x=sd, color='grey',linewidth=0.5)
+                plt.axvline(x=sd,color='grey',linewidth=0.5)
+                plt.show(block=False)
             
             if t%10==0:
                 print '       -- SUMMING APERTURE'
