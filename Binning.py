@@ -14,14 +14,14 @@ from setup import *
 
 def BinWhite(SAVEPATH,midtime,start,end,corr):
     if corr==True:
-        cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All_Corr.npz')['convolved']
-        #cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All_Corr.npz')['data']
+        #cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All_Corr.npz')['convolved']
+        cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All_Corr.npz')['data']
         wav_arr=np.load(SAVEPATH+'ShiftedSpec_All_Corr.npz')['wave']
         ptn_err=np.load(SAVEPATH+'FlattenedSpectra_Corr.npz')['pht_err']
         tot_err=np.load(SAVEPATH+'FlattenedSpectra_Corr.npz')['tot_err']
     else:
-        cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All.npz')['convolved']
-        #cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All.npz')['data']
+        #cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All.npz')['convolved']
+        cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All.npz')['data']
         wav_arr=np.load(SAVEPATH+'ShiftedSpec_All.npz')['wave']
         ptn_err=np.load(SAVEPATH+'FlattenedSpectra.npz')['pht_err']
         tot_err=np.load(SAVEPATH+'FlattenedSpectra.npz')['tot_err']
