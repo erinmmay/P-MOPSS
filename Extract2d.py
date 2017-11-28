@@ -16,6 +16,9 @@ import matplotlib.pyplot as plt
 top_chip=[6,5,8,7]
 bot_chip=[1,2,3,4]
 
+top_gain=[0.82,0.83,0.82,0.86]
+bot_gain=[0.85,0.85,0.84,0.83]
+
 #path=data_path
 #print path
 
@@ -94,8 +97,8 @@ def Extract2D(path,ex,SAVEPATH,binn,Lflat):
             if chip in top_chip:
                 c=top_chip.index(chip)
                 #    print '  -->>', root, chip, bot_chip[c]
-                data_t=np.fliplr((fits.open(path+root+'c'+str(int(chip))+'.fits.gz')[0].data)[0:ypixels/binn,0:xpixels/binn])
-                data_b=np.flipud((fits.open(path+root+'c'+str(int(bot_chip[c]))+'.fits.gz')[0].data)[0:ypixels/binn,0:xpixels/binn])
+                data_t=np.fliplr((fits.open(path+root+'c'+str(int(chip))+'.fits.gz')[0].data)[0:ypixels/binn,0:xpixels/binn])/top_gain[c]
+                data_b=np.flipud((fits.open(path+root+'c'+str(int(bot_chip[c]))+'.fits.gz')[0].data)[0:ypixels/binn,0:xpixels/binn])/bot_gain[c]
                 #print root, c, np.nanmedian(data_t), np.nanmedian(data_b)
                 data_2c[0:ypixels/binn,:]=data_t
                 data_2c[ypixels/binn+ygap:,:]=data_b
