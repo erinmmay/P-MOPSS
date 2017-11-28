@@ -68,28 +68,28 @@ def AlignSpec(osr,window,fwhm,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex
         plt.show(block=False)
         plt.clf()
         
-        print ' --Filtering...'
-        for t in range(0+2,n_exp-2):
-            timemedian=medfilt(input_data[o,t,:],kernel_size=ks)
-            data_medsb=input_data[o,t,:]-timemedian
-            data_acmed=np.nanmedian(data_medsb)
-            data_acstd=np.nanstd(data_medsb)
-            if t%10==0:
-                print '    -->> TIME: ',t
-            for p in range(0,n_pix):
-                p=int(p)
-                if data_medsb[p]>data_acmed+olv*data_acstd or data_medsb[p]<data_acmed-olv*data_acstd:
-                    counter+=1
-                    val=timemedian[p]
-                    input_data[o,t,p]=val
-            #smooth_data=input_data
-                #minp=np.max([0,p-window])
-                #maxp=np.min([p+window,n_pix])
-                #median=np.nanmedian(np.append(input_data[o,t,minp:p],input_data[o,t,p+1:maxp]))
-                #stdev=np.nanstd(np.append(input_data[o,t,minp:p],input_data[o,t,p+1:maxp]))
-                #if np.abs(input_data[o,t,p]-median)>3.*stdev:
-                #    smooth_data[o,t,p]=np.nanmedian(np.append(input_data[o,t-2,p],input_data[o,t+2,p]))
-                #    counter+=1
+        #print ' --Filtering...'
+        #for t in range(0+2,n_exp-2):
+        #    timemedian=medfilt(input_data[o,t,:],kernel_size=ks)
+        #    data_medsb=input_data[o,t,:]-timemedian
+        #    data_acmed=np.nanmedian(data_medsb)
+        #    data_acstd=np.nanstd(data_medsb)
+        #    if t%10==0:
+        #        print '    -->> TIME: ',t
+        #    for p in range(0,n_pix):
+        #        p=int(p)
+        #        if data_medsb[p]>data_acmed+olv*data_acstd or data_medsb[p]<data_acmed-olv*data_acstd:
+        #            counter+=1
+        #            val=timemedian[p]
+        #            input_data[o,t,p]=val
+        #    #smooth_data=input_data
+        #        #minp=np.max([0,p-window])
+        #        #maxp=np.min([p+window,n_pix])
+        #        #median=np.nanmedian(np.append(input_data[o,t,minp:p],input_data[o,t,p+1:maxp]))
+        #        #stdev=np.nanstd(np.append(input_data[o,t,minp:p],input_data[o,t,p+1:maxp]))
+        #        #if np.abs(input_data[o,t,p]-median)>3.*stdev:
+        #        #    smooth_data[o,t,p]=np.nanmedian(np.append(input_data[o,t-2,p],input_data[o,t+2,p]))
+        #        #    counter+=1
         print '       -->>',counter
         for t in range(0,n_exp):
             if t%10==0:

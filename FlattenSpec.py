@@ -22,6 +22,7 @@ def FlattenSpec(ex,SAVEPATH,corr,ed_l,ed_u,ks,ks_a,sd,olv,olv_a,ver):
     flat_spec=np.empty([n_obj,n_exp,2*ypixels+ygap])*np.nan
     pht_err=np.zeros_like(flat_spec)
     tot_err=np.zeros_like(flat_spec)
+    gaus_params=np.empty([n_obj,n_exp,2*ypixels+ygap,4])*0.0
     
     dark_var=np.load(SAVEPATH+'Darks.npz')['var']
     flats_var=np.load(SAVEPATH+'Flats.npz')['var']
@@ -133,6 +134,12 @@ def FlattenSpec(ex,SAVEPATH,corr,ed_l,ed_u,ks,ks_a,sd,olv,olv_a,ver):
                     sub_bkgd[t,j,:]=row_data-background#np.empty([len(row_data)])*np.nan
                     fwhm_ar[t,j+y_start]=fwhm_ar[t,j+y_start-1]
                     cent_ar[t,j+y_start]=cent_ar[t,j+y_start-1]
+                    
+                    gaus_params[i,t,j+y_start,0]=np.nanmax(row_data)
+                    gaus_params[i,t,j+y_start,1]=cent_ar[t,j+y_start-1]
+                    gaus_params[i,t,j+y_start,2]=fwhm_ar[t,j+y_start-1]
+                    gaus_params[i,t,j+y_start,3]=background[50]
+                    
                 else:
                     fwhm_ar[t,j+y_start]=2*np.sqrt(2*np.log(2))*g_param[2]
                     #if g_param[1]>150 or g_param[1]<50:
@@ -140,7 +147,8 @@ def FlattenSpec(ex,SAVEPATH,corr,ed_l,ed_u,ks,ks_a,sd,olv,olv_a,ver):
                     #else:
                     cent_ar[t,j+y_start]=int(g_param[1])
                     sub_bkgd[t,j,:]=row_data-background
-                 
+                    
+                    gaus_params[i,t,j+y_start,:]=g_param 
                 
                 #### outliers along gaussian ####
                 #print '       -- (outlier dat pixel rejection)'
@@ -174,7 +182,6 @@ def FlattenSpec(ex,SAVEPATH,corr,ed_l,ed_u,ks,ks_a,sd,olv,olv_a,ver):
                             #row_data[ind]=row_data[ind]
                         a_dat[b-1:b+2]=val
                         row_data[ind-1:ind+2]=val
-
                        
                         p0=g_param
                 
@@ -184,6 +191,11 @@ def FlattenSpec(ex,SAVEPATH,corr,ed_l,ed_u,ks,ks_a,sd,olv,olv_a,ver):
                             sub_bkgd[t,j,:]=row_data-background#np.empty([len(row_data)])*np.nan
                             fwhm_ar[t,j+y_start]=fwhm_ar[t,j+y_start-1]
                             cent_ar[t,j+y_start]=cent_ar[t,j+y_start-1]
+                            
+                            gaus_params[i,t,j+y_start,0]=np.nanmax(row_data)
+                            gaus_params[i,t,j+y_start,1]=cent_ar[t,j+y_start-1]
+                            gaus_params[i,t,j+y_start,2]=fwhm_ar[t,j+y_start-1]
+                            gaus_params[i,t,j+y_start,3]=background[50]
                         else:
                             fwhm_ar[t,j+y_start]=2*np.sqrt(2*np.log(2))*g_paramn[2]
                             #print cent_ar[t,j+y_start],int(g_paramn[1])
@@ -193,7 +205,9 @@ def FlattenSpec(ex,SAVEPATH,corr,ed_l,ed_u,ks,ks_a,sd,olv,olv_a,ver):
                             cent_ar[t,j+y_start]=int(g_paramn[1])
                             sub_bkgd[t,j,:]=row_data-background
                             
-                        gfitn=Gaussian(a_pix,*g_param)
+                            gaus_params[i,t,j+y_start,:]=g_paramn 
+                            
+                        gfitn=Gaussian(a_pix,*g_paramn)
                         
                         if ver==True:
                             fig,ax=plt.subplots(1,3,figsize=(9.,2.))
@@ -201,6 +215,7 @@ def FlattenSpec(ex,SAVEPATH,corr,ed_l,ed_u,ks,ks_a,sd,olv,olv_a,ver):
                         
                             ax[0].plot(a_pix,a_dat0,color='black',linewidth=2.0)
                             ax[0].plot(a_pix,gfit,color='cyan',linewidth=1.0)
+                            ax[0].axvline(x=g_param[1],color='grey')
                             #plt.plot(a_pix,a_dat_med,color='cyan',linewidth=1.0)
                             ax[0].set_title(str(int(i))+' '+str(int(t))+' '+str(int(j)))
 
@@ -216,6 +231,7 @@ def FlattenSpec(ex,SAVEPATH,corr,ed_l,ed_u,ks,ks_a,sd,olv,olv_a,ver):
    
                             ax[2].plot(a_pix,a_dat,color='black',linewidth=2.0)
                             ax[2].plot(a_pix,gfitn,color='cyan',linewidth=1.0)
+                            ax[2].axvline(x=g_paramn[1],color='grey')
                             #plt.plot(a_pix,a_dat_med,color='cyan',linewidth=1.0)
                             ax[2].set_title(str(int(i))+' '+str(int(t))+' '+str(int(j+y_start)))
                         
@@ -260,16 +276,30 @@ def FlattenSpec(ex,SAVEPATH,corr,ed_l,ed_u,ks,ks_a,sd,olv,olv_a,ver):
                 print '       -- SUMMING APERTURE'
             for j in range(0,n_rows):
                 row_data=frame[j,:]
+                y_start=np.int(np.max([0,y0-ex]))
+                
+                sum_param=gaus_params[i,t,j+y_start,:]
+                sum_param[2]=fwhm_av[t]
+                
+                sum_gauss=Gaussian(xpix_ar,*sum_param)
+                
                 if not np.isfinite(row_data[0]):
                     continue
-                low=np.nanmax([0,cent_ar[t,j]-3*int(fwhm_av[t])])
-                up=np.nanmin([cent_ar[t,j]+3*int(fwhm_av[t]),xwidth])
-                #print flat_spec.shape, '     ', i,t,j+y0,j,n_rows
-                y_start=np.int(np.max([0,y0-ex]))
-                flat_spec[i,t,j+y_start]=np.nansum(sub_bkgd[t,j,int(low):int(up)])
+                #low=np.nanmax([0,cent_ar[t,j]-3*int(fwhm_av[t])])
+                #up=np.nanmin([cent_ar[t,j]+3*int(fwhm_av[t]),xwidth])
+                low=np.nanmax([0,sum_param[1]-3*sum_param[2]])
+                up=np.nanmin([sum_param[1]+3*sum_param[2],xwidth])
+                
+                ##print flat_spec.shape, '     ', i,t,j+y0,j,n_rows
+                
+                flat_spec[i,t,j+y_start]=np.nansum(sum_gauss[int(low):int(up)])
+                
+                #flat_spec[i,t,j+y_start]=np.nansum(sub_bkgd[t,j,int(low):int(up)])
                 pht_err[i,t,j+y_start]=np.sqrt(flat_spec[i,t,j+y_start])
                 tot_err[i,t,j+y_start]=np.sqrt((pht_err[i,t,j+y_start])**2.+dark_var)
                 #tot_err[i,t,j+ystart]=np.sqrt((tot_err[i,t,j+ystart]/flat_spec[i,t,j+y_start]
+            plt.figure(10)
+            plt.plot(np.linspace(0,2*ypixels+ygap,2*ypixels+ygap),flat_spec[i,t,:])
         plt.figure(2)
         plt.clf()
         plt.cla()
