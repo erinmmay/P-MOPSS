@@ -14,7 +14,7 @@ from setup import *
 def Gaussian(x,a,b,c,d):
     return a*np.exp(-((x-b)**2.)/(2.*c**2.))+d
 
-def FlattenSpec(ex,SAVEPATH,corr,ed_l,ed_u,ks,ks_a,sd,olv,olv_a,ver):
+def FlattenSpec(ex,SAVEPATH,corr,ed_l,ed_u,ks,ks_a,sd,olv,olv_a,ver,int_corr):
     
     n_obj=int(np.load(SAVEPATH+'FinalMasks.npz')['masks'].shape[0])
     n_exp=np.load(SAVEPATH+'HeaderData.npz')['n_exp']
@@ -22,7 +22,7 @@ def FlattenSpec(ex,SAVEPATH,corr,ed_l,ed_u,ks,ks_a,sd,olv,olv_a,ver):
     flat_spec=np.empty([n_obj,n_exp,2*ypixels+ygap])*np.nan
     pht_err=np.zeros_like(flat_spec)
     tot_err=np.zeros_like(flat_spec)
-    gaus_params=np.empty([n_obj,n_exp,2*ypixels+ygap,4])*0.0
+    gaus_params=np.empty([n_obj,n_exp,2*ypixels+ygap,4])*np.nan
     
     dark_var=np.load(SAVEPATH+'Darks.npz')['var']
     flats_var=np.load(SAVEPATH+'Flats.npz')['var']
@@ -152,93 +152,95 @@ def FlattenSpec(ex,SAVEPATH,corr,ed_l,ed_u,ks,ks_a,sd,olv,olv_a,ver):
                 
                 #### outliers along gaussian ####
                 #print '       -- (outlier dat pixel rejection)'
+                if int_corr==True:
                 
-                a_pix=xpix_ar[ed_l:xwidth-ed_u]
-                a_dat=np.array(row_data[ed_l:xwidth-ed_u])
-                a_dat0=np.array(row_data[ed_l:xwidth-ed_u])
+                    a_pix=xpix_ar[ed_l:xwidth-ed_u]
+                    a_dat=np.array(row_data[ed_l:xwidth-ed_u])
+                    a_dat0=np.array(row_data[ed_l:xwidth-ed_u])
                 
-                gfit=Gaussian(a_pix,*g_param)
-                counter=0
+                    gfit=Gaussian(a_pix,*g_param)
+                    counter=0
                 
-                a_median=medfilt(a_dat,kernel_size=ks_a)
+                    a_median=medfilt(a_dat,kernel_size=ks_a)
                 
-                a_dat_med=a_dat-gfit
-                a_std=np.nanstd(a_dat_med)
-                a_med=np.nanmedian(a_dat_med)
+                    a_dat_med=a_dat-gfit
+                    a_std=np.nanstd(a_dat_med)
+                    a_med=np.nanmedian(a_dat_med)
    
                 
-                for b in range(1,len(a_pix)-2):
-                    b=int(b)
-                    olv=olv
-                    if a_dat_med[b]>olv_a*a_std+a_med or a_dat_med[b]<a_med-olv_a*a_std:
-                        counter+=1
-                        #a_dat0=a_dat[:]
-                        ind=(np.where(xpix_ar==a_pix[b])[0][0])
+   
+                    for b in range(1,len(a_pix)-2):
+                        b=int(b)
+                        olv=olv
+                        if a_dat_med[b]>olv_a*a_std+a_med or a_dat_med[b]<a_med-olv_a*a_std:
+                            counter+=1
+                            #a_dat0=a_dat[:]
+                            ind=(np.where(xpix_ar==a_pix[b])[0][0])
                         
-                        val=a_median[b-1:b+2]
-                        #if val[1]-gfit[b]>1.5*olv*bg_std+bg_med or val[1]-gfit[b]<bg_med-1.5*olv*bg_std:
-                        #    val=a_dat[b-1:b+2]
-                            #a_dat[b]=a_dat[b]
-                            #row_data[ind]=row_data[ind]
-                        a_dat[b-1:b+2]=val
-                        row_data[ind-1:ind+2]=val
+                            val=a_median[b-1:b+2]
+                            #if val[1]-gfit[b]>1.5*olv*bg_std+bg_med or val[1]-gfit[b]<bg_med-1.5*olv*bg_std:
+                            #    val=a_dat[b-1:b+2]
+                                #a_dat[b]=a_dat[b]
+                                #row_data[ind]=row_data[ind]
+                            a_dat[b-1:b+2]=val
+                            row_data[ind-1:ind+2]=val
                        
-                        p0=g_param
+                            p0=g_param
                 
-                        try:
-                            g_paramn,g_covn=curve_fit(Gaussian,xpix_ar,row_data,p0=p0,maxfev=10000)
-                        except RuntimeError:
-                            sub_bkgd[t,j,:]=row_data-background#np.empty([len(row_data)])*np.nan
-                            fwhm_ar[t,j+y_start]=fwhm_ar[t,j+y_start-1]
-                            cent_ar[t,j+y_start]=cent_ar[t,j+y_start-1]
+                            try:
+                                g_paramn,g_covn=curve_fit(Gaussian,xpix_ar,row_data,p0=p0,maxfev=10000)
+                            except RuntimeError:
+                                sub_bkgd[t,j,:]=row_data-background#np.empty([len(row_data)])*np.nan
+                                fwhm_ar[t,j+y_start]=fwhm_ar[t,j+y_start-1]
+                                cent_ar[t,j+y_start]=cent_ar[t,j+y_start-1]
                             
-                            gaus_params[i,t,j+y_start,0]=np.nanmax(row_data)
-                            gaus_params[i,t,j+y_start,1]=cent_ar[t,j+y_start-1]
-                            gaus_params[i,t,j+y_start,2]=fwhm_ar[t,j+y_start-1]
-                            gaus_params[i,t,j+y_start,3]=background[50]
-                        else:
-                            fwhm_ar[t,j+y_start]=2*np.sqrt(2*np.log(2))*g_paramn[2]
-                            #print cent_ar[t,j+y_start],int(g_paramn[1])
-                            #if g_paramn[1]>150 or g_paramn[1]<50:
-                            #    cent_ar[t,j+y_start]=cent_ar[t,j+y_start-1]
-                            #else:
-                            cent_ar[t,j+y_start]=int(g_paramn[1])
-                            sub_bkgd[t,j,:]=row_data-background
+                                gaus_params[i,t,j+y_start,0]=np.nanmax(row_data)
+                                gaus_params[i,t,j+y_start,1]=cent_ar[t,j+y_start-1]
+                                gaus_params[i,t,j+y_start,2]=fwhm_ar[t,j+y_start-1]
+                                gaus_params[i,t,j+y_start,3]=background[50]
+                            else:
+                                fwhm_ar[t,j+y_start]=2*np.sqrt(2*np.log(2))*g_paramn[2]
+                                #print cent_ar[t,j+y_start],int(g_paramn[1])
+                                #if g_paramn[1]>150 or g_paramn[1]<50:
+                                #    cent_ar[t,j+y_start]=cent_ar[t,j+y_start-1]
+                                #else:
+                                cent_ar[t,j+y_start]=int(g_paramn[1])
+                                sub_bkgd[t,j,:]=row_data-background
                             
-                            gaus_params[i,t,j+y_start,:]=g_paramn 
+                                gaus_params[i,t,j+y_start,:]=g_paramn 
                             
-                        gfitn=Gaussian(a_pix,*g_paramn)
+                            gfitn=Gaussian(a_pix,*g_paramn)
                         
-                        if ver==True:
-                            fig,ax=plt.subplots(1,3,figsize=(9.,2.))
+                            if ver==True:
+                                fig,ax=plt.subplots(1,3,figsize=(9.,2.))
                             
                         
-                            ax[0].plot(a_pix,a_dat0,color='black',linewidth=2.0)
-                            ax[0].plot(a_pix,gfit,color='cyan',linewidth=1.0)
-                            ax[0].axvline(x=g_param[1],color='grey')
-                            #plt.plot(a_pix,a_dat_med,color='cyan',linewidth=1.0)
-                            ax[0].set_title(str(int(i))+' '+str(int(t))+' '+str(int(j)))
+                                ax[0].plot(a_pix,a_dat0,color='black',linewidth=2.0)
+                                ax[0].plot(a_pix,gfit,color='cyan',linewidth=1.0)
+                                ax[0].axvline(x=g_param[1],color='grey')
+                                #plt.plot(a_pix,a_dat_med,color='cyan',linewidth=1.0)
+                                ax[0].set_title(str(int(i))+' '+str(int(t))+' '+str(int(j)))
 
-                            ax[1].plot(a_pix,a_dat_med,color='black',linewidth=2.0)
-                            ax[1].plot(a_pix,a_dat-gfit,color='red',linewidth=1.0)
-                            ax[1].axhline(y=a_med,color='lime')
-                            ax[1].axhline(y=a_med+olv_a*a_std,color='lime',linestyle='--')
-                            ax[1].axhline(y=a_med-olv_a*a_std,color='lime',linestyle='--')
-                            ax[1].axhline(y=a_med+1.5*olv_a*a_std,color='green',linestyle='--')
-                            ax[1].axhline(y=a_med-1.5*olv_a*a_std,color='green',linestyle='--')
-                            #plt.plot(a_pix,a_dat_med,color='cyan',linewidth=1.0)
-                            ax[1].set_title(str(int(i))+' '+str(int(t))+' '+str(int(j)))
+                                ax[1].plot(a_pix,a_dat_med,color='black',linewidth=2.0)
+                                ax[1].plot(a_pix,a_dat-gfit,color='red',linewidth=1.0)
+                                ax[1].axhline(y=a_med,color='lime')
+                                ax[1].axhline(y=a_med+olv_a*a_std,color='lime',linestyle='--')
+                                ax[1].axhline(y=a_med-olv_a*a_std,color='lime',linestyle='--')
+                                ax[1].axhline(y=a_med+1.5*olv_a*a_std,color='green',linestyle='--')
+                                ax[1].axhline(y=a_med-1.5*olv_a*a_std,color='green',linestyle='--')
+                                #plt.plot(a_pix,a_dat_med,color='cyan',linewidth=1.0)
+                                ax[1].set_title(str(int(i))+' '+str(int(t))+' '+str(int(j)))
    
-                            ax[2].plot(a_pix,a_dat,color='black',linewidth=2.0)
-                            ax[2].plot(a_pix,gfitn,color='cyan',linewidth=1.0)
-                            ax[2].axvline(x=g_paramn[1],color='grey')
-                            #plt.plot(a_pix,a_dat_med,color='cyan',linewidth=1.0)
-                            ax[2].set_title(str(int(i))+' '+str(int(t))+' '+str(int(j+y_start)))
+                                ax[2].plot(a_pix,a_dat,color='black',linewidth=2.0)
+                                ax[2].plot(a_pix,gfitn,color='cyan',linewidth=1.0)
+                                ax[2].axvline(x=g_paramn[1],color='grey')
+                                #plt.plot(a_pix,a_dat_med,color='cyan',linewidth=1.0)
+                                ax[2].set_title(str(int(i))+' '+str(int(t))+' '+str(int(j+y_start)))
                         
-                            plt.show(block=False)
+                                plt.show(block=False)
                         
-                if (counter/xwidth)*100.>5.:
-                    print 'CAUTION: MORE THAN 5% CORRECTED FOR ROW ',j, '!!!!!'
+                    if (counter/xwidth)*100.>1.:
+                        print 'CAUTION: MORE THAN 1% CORRECTED FOR ROW ',j, '!!!!!'
                     
                 obj_data[t,j,:]=row_data   #updating with data fix
                 frame[j,:]=row_data
@@ -274,32 +276,76 @@ def FlattenSpec(ex,SAVEPATH,corr,ed_l,ed_u,ks,ks_a,sd,olv,olv_a,ver):
             
             if t%10==0:
                 print '       -- SUMMING APERTURE'
+                
+            #plt.plot(gaus_params[i,t,:,1],color='black',linewidth=2.0)
+            
+            y_arrx=np.linspace(0,2*ypixels+ygap-1,2*ypixels+ygap)[~np.isnan(gaus_params[i,t,:,1])]
+            x_cents=gaus_params[i,t,~np.isnan(gaus_params[i,t,:,1]),1]
+           
+            x_fits=np.polyfit(y_arrx,x_cents,2)
+            x_fitt=(np.poly1d(x_fits))(y_arrx)
+            
+            gaus_params[i,t,:,1]=(np.poly1d(x_fits))(np.linspace(0,2*ypixels+ygap-1,2*ypixels+ygap))
+            
+            
+            #plt.plot(y_arrx,x_fitt,color='red')
+            #plt.title(str(int(t)))
+            #plt.ylim(ed_l,xwidth-ed_u)
+            #plt.show()
+            
             for j in range(0,n_rows):
+                cent_ar[t,j+y_start]=gaus_params[i,t,j+y_start,1]
+                
                 row_data=frame[j,:]
                 y_start=np.int(np.max([0,y0-ex]))
                 
                 sum_param=gaus_params[i,t,j+y_start,:]
                 sum_param[2]=fwhm_av[t]
                 
-                sum_gauss=Gaussian(xpix_ar,*sum_param)
+                sum_gauss=Gaussian(xpix_ar,*sum_param)-(np.poly1d(bckgrnd[:,t,j+y_start]))(xpix_ar)
+                
                 
                 if not np.isfinite(row_data[0]):
                     continue
-                #low=np.nanmax([0,cent_ar[t,j]-3*int(fwhm_av[t])])
-                #up=np.nanmin([cent_ar[t,j]+3*int(fwhm_av[t]),xwidth])
-                low=np.nanmax([0,sum_param[1]-3*sum_param[2]])
-                up=np.nanmin([sum_param[1]+3*sum_param[2],xwidth])
+                low=np.nanmax([0,cent_ar[t,j]-3*int(fwhm_av[t])])
+                up=np.nanmin([cent_ar[t,j]+3*int(fwhm_av[t]),xwidth])
+                #low=np.nanmax([0,sum_param[1]-3*sum_param[2]])
+                #up=np.nanmin([sum_param[1]+3*sum_param[2],xwidth])
                 
-                ##print flat_spec.shape, '     ', i,t,j+y0,j,n_rows
+              
                 
-                flat_spec[i,t,j+y_start]=np.nansum(sum_gauss[int(low):int(up)])
+                #print flat_spec.shape, '     ', i,t,j+y0,j,n_rows
                 
-                #flat_spec[i,t,j+y_start]=np.nansum(sub_bkgd[t,j,int(low):int(up)])
+                #flat_spec[i,t,j+y_start]=np.nansum(sum_gauss[int(low):int(up)])
+                
+                flat_spec[i,t,j+y_start]=np.nansum(sub_bkgd[t,j,int(low):int(up)])
                 pht_err[i,t,j+y_start]=np.sqrt(flat_spec[i,t,j+y_start])
                 tot_err[i,t,j+y_start]=np.sqrt((pht_err[i,t,j+y_start])**2.+dark_var)
                 #tot_err[i,t,j+ystart]=np.sqrt((tot_err[i,t,j+ystart]/flat_spec[i,t,j+y_start]
-            plt.figure(10)
-            plt.plot(np.linspace(0,2*ypixels+ygap,2*ypixels+ygap),flat_spec[i,t,:])
+            #plt.figure(10)
+            #plt.plot(np.linspace(0,2*ypixels+ygap,2*ypixels+ygap),flat_spec[i,t,:])
+            #plt.show()
+        fig,ax=plt.subplots(2,2,figsize=(8,8))
+        ax[0,0].plot(fwhm_av)
+        plt.figtext(0.2,0.8,'fwhm_av',color='black')
+        
+        for j in range(0,n_rows):
+            if j%100==0:
+                ax[0,1].plot(cent_ar[:,j+y_start])
+        plt.figtext(0.8,0.8,'x_centroid',color='black')
+            
+        for j in range(0,n_rows):
+            if j%100==0:
+                ax[1,0].plot(bckgrnd[0,:,j+y_start])
+        plt.figtext(0.2,0.2,'bg slope',color='black')
+                                     
+        for j in range(0,n_rows):
+            if j%100==0:
+                ax[1,1].plot(bckgrnd[1,:,j+y_start])
+            
+        plt.figtext(0.8,0.2,'bg counts',color='black')
+        fig.show()
+            
         plt.figure(2)
         plt.clf()
         plt.cla()
@@ -314,9 +360,9 @@ def FlattenSpec(ex,SAVEPATH,corr,ed_l,ed_u,ks,ks_a,sd,olv,olv_a,ver):
         time1=datetime.now()
         print'          time to run: ', time1-time0
         if corr==True:
-            np.savez_compressed(SAVEPATH+'SpectraFitParams_'+str(int(i))+'_Corr.npz',fwhm=fwhm_ar,fwhm_av=fwhm_av,x=cent_ar,bg=bckgrnd)
+            np.savez_compressed(SAVEPATH+'SpectraFitParams_'+str(int(i))+'_Corr.npz',fwhm=fwhm_ar,fwhm_av=fwhm_av,x=cent_ar,bg=bckgrnd,gaus_params=gaus_params)
         else:
-            np.savez_compressed(SAVEPATH+'SpectraFitParams_'+str(int(i))+'.npz',fwhm=fwhm_ar,fwhm_av=fwhm_av,x=cent_ar,bg=bckgrnd)
+            np.savez_compressed(SAVEPATH+'SpectraFitParams_'+str(int(i))+'.npz',fwhm=fwhm_ar,fwhm_av=fwhm_av,x=cent_ar,bg=bckgrnd,gaus_params=gaus_params)
     if corr==True:
             np.savez_compressed(SAVEPATH+'FlattenedSpectra_Corr.npz',flat_spec=flat_spec,fwhm_ar=fwhm_ar,fwhm_av=fwhm_av,cent_ar=cent_ar,pht_err=pht_err,tot_err=tot_err)
     else:

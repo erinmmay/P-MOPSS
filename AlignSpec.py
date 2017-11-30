@@ -31,8 +31,8 @@ def AlignSpec(osr,window,fwhm,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex
     ovs_data=np.empty([n_obj,n_exp,osr*n_pix])
     int_data=np.empty([n_obj,n_exp,n_pix])
     
-    pix_ar=np.linspace(n_pix,0,n_pix)
-    pix_ar_os=np.linspace(n_pix,0,osr*n_pix)
+    pix_ar=np.linspace(n_pix-1,0,n_pix)
+    pix_ar_os=np.linspace(n_pix-1,0,osr*n_pix)
     
     shift_pixels=np.empty([n_obj,n_exp,n_pix])
     
@@ -54,6 +54,10 @@ def AlignSpec(osr,window,fwhm,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex
         print '-----------------'
         print '  OBJECT # ', o
         print '-----------------'
+        if o==1 or o==2 or o==6 or o==9:
+            print '--------- BAD WAVELENGTH SOLUTION'  
+            continue
+        
         #if o==1 or o==2 or o==5 or o==7:
         #    continue
         counter=0
@@ -68,32 +72,25 @@ def AlignSpec(osr,window,fwhm,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex
         plt.show(block=False)
         plt.clf()
         
-        #print ' --Filtering...'
-        #for t in range(0+2,n_exp-2):
-        #    timemedian=medfilt(input_data[o,t,:],kernel_size=ks)
-        #    data_medsb=input_data[o,t,:]-timemedian
-        #    data_acmed=np.nanmedian(data_medsb)
-        #    data_acstd=np.nanstd(data_medsb)
-        #    if t%10==0:
-        #        print '    -->> TIME: ',t
-        #    for p in range(0,n_pix):
-        #        p=int(p)
-        #        if data_medsb[p]>data_acmed+olv*data_acstd or data_medsb[p]<data_acmed-olv*data_acstd:
-        #            counter+=1
-        #            val=timemedian[p]
-        #            input_data[o,t,p]=val
-        #    #smooth_data=input_data
-        #        #minp=np.max([0,p-window])
-        #        #maxp=np.min([p+window,n_pix])
-        #        #median=np.nanmedian(np.append(input_data[o,t,minp:p],input_data[o,t,p+1:maxp]))
-        #        #stdev=np.nanstd(np.append(input_data[o,t,minp:p],input_data[o,t,p+1:maxp]))
-        #        #if np.abs(input_data[o,t,p]-median)>3.*stdev:
-        #        #    smooth_data[o,t,p]=np.nanmedian(np.append(input_data[o,t-2,p],input_data[o,t+2,p]))
-        #        #    counter+=1
+        print ' --Filtering...'
+        for t in range(0+2,n_exp-2):
+            timemedian=medfilt(input_data[o,t,:],kernel_size=ks)
+            data_medsb=input_data[o,t,:]-timemedian
+            data_acmed=np.nanmedian(data_medsb)
+            data_acstd=np.nanstd(data_medsb)
+            if t%10==0:
+                print '    -->> TIME: ',t
+            for p in range(0,n_pix):
+                p=int(p)
+                if data_medsb[p]>data_acmed+olv*data_acstd or data_medsb[p]<data_acmed-olv*data_acstd:
+                    counter+=1
+                    val=timemedian[p]
+                    input_data[o,t,p]=val
+
         print '       -->>',counter
         for t in range(0,n_exp):
             if t%10==0:
-                plt.plot(np.linspace(0,2*ypixels+ygap,2*ypixels+ygap),input_data[o,t,:])
+                plt.plot(np.linspace(0,2*ypixels+ygap-1,2*ypixels+ygap),input_data[o,t,:])
         plt.figtext(0.2,0.8,'OBJECT '+str(int(o)),fontsize=15,color='red')
         plt.xlabel('Stitched Pixels')
         plt.ylabel('ADUs')
@@ -124,7 +121,7 @@ def AlignSpec(osr,window,fwhm,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex
         
         for t in range(0,n_exp):
             if t%10==0:
-                plt.plot(np.linspace(0,2*ypixels+ygap,2*ypixels+ygap),cnv_data[o,t,:])
+                plt.plot(np.linspace(0,2*ypixels+ygap-1,2*ypixels+ygap),cnv_data[o,t,:])
         plt.figtext(0.2,0.8,'OBJECT '+str(int(o)),fontsize=15,color='red')
         plt.xlabel('Stitched Pixels')
         plt.ylabel('ADUs')
@@ -138,25 +135,116 @@ def AlignSpec(osr,window,fwhm,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex
             ovs_data[o,t,:]=interp_d(pix_ar_os)
        
         print ' --Cross Correlating in Time...'
-        time0=np.nan_to_num(ovs_data[o,0,:]/np.nanmax(ovs_data[o,0,:]))
-        for t in range(0,n_exp):
-            comp=np.nan_to_num(ovs_data[o,t,:]/np.nanmax(ovs_data[o,t,:]))
-            pix_shift=np.argmax(np.correlate(time0,comp,'full'))-(len(pix_ar_os)-1)
-            if t%10==0:
-                print '    -->> TIME: ',t,'    pixel shift: ',float(pix_shift)/float(osr)
-            shift_pixels[o,t,:]=pix_ar+float(pix_shift)/float(osr)
+        
+        # first, apply wavelength solution to first point in time to identify pixel locations of major atmospheric lines
+        filew=wavelength_path+'Cal_'+str(int(o))+'_out.txt'
+       
+          
+        coeff=np.genfromtxt(filew,skip_header=4,skip_footer=25,usecols=[1])
+        new_pix=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[1])
+        cor_wav=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[2])
             
-            if binn>1:
-                dummy_array=np.empty([n_obj,n_exp,n_pix])
-                dummy_array[o,t,:]=shift_pixels[o,t,:]
-                for d in range(0,n_pix):
-                    if dummy_array[o,t,d]<ypixels:
-                        dummy_array[o,t,d]=dummy_array[o,t,d]*2
-                    if dummy_array[o,t,d]>ypixels:
-                        dummy_array[o,t,d]=(dummy_array[o,t,d]-ygap)*2+ygap
+        order=len(coeff)-1
+            
+        ALL_PIXELS=np.empty([n_obj,len(new_pix)])
+            
+        ALL_PIXELS[o,:]=new_pix#-(y0_fflip-y0_o)
+        wav_func=np.poly1d(np.polyfit(ALL_PIXELS[o,:],cor_wav,order))
+            #wav_ar[o,:,:]=wav_func(shift_pixels[o,:,:])
+        
+        wave_first=wav_func(pix_ar_os)
+            
+        #identifying line locations in first exposure
+        o2_7594_ind_upp=np.where(np.abs(wave_first-7589)==np.nanmin(np.abs(wave_first-7589)))[0][0]
+        o2_7594_ind_low=np.where(np.abs(wave_first-7599)==np.nanmin(np.abs(wave_first-7599)))[0][0]
+        print o2_7594_ind_low,o2_7594_ind_upp
+        o2_7594_ar_0=ovs_data[o,0,o2_7594_ind_low:o2_7594_ind_upp]
+        #o2_7594_ac_0=np.where(ovs_data[o,0,:]==np.nanmin(o2_7594_ar_0))[0][0]
+        o2_7594_ac_0=np.argmin(o2_7594_ar_0)
+        
+        
+        o2_6867_ind_upp=np.where(np.abs(wave_first-6862)==np.nanmin(np.abs(wave_first-6862)))[0][0]
+        o2_6867_ind_low=np.where(np.abs(wave_first-6872)==np.nanmin(np.abs(wave_first-6872)))[0][0]
+        print o2_6867_ind_low,o2_6867_ind_upp
+        o2_6867_ar_0=ovs_data[o,0,o2_6867_ind_low:o2_6867_ind_upp]
+        #o2_6867_ac_0=np.where(ovs_data[o,0,:]==np.nanmin(o2_6867_ar_0))[0][0]
+        o2_6867_ac_0=np.argmin(o2_6867_ar_0)
+        
+        ha_6563_ind_upp=np.where(np.abs(wave_first-6558)==np.nanmin(np.abs(wave_first-6558)))[0][0]
+        ha_6563_ind_low=np.where(np.abs(wave_first-6568)==np.nanmin(np.abs(wave_first-6568)))[0][0]
+        print ha_6563_ind_low,ha_6563_ind_upp
+        ha_6563_ar_0=ovs_data[o,0,ha_6563_ind_low:ha_6563_ind_upp]
+        #ha_6563_ac_0=np.where(ovs_data[o,0,:]==np.nanmin(ha_6563_ar_0))[0][0]
+        ha_6563_ac_0=np.argmin(ha_6563_ar_0)
+        
+        na_5896_ind_upp=np.where(np.abs(wave_first-5891)==np.nanmin(np.abs(wave_first-5891)))[0][0]
+        na_5896_ind_low=np.where(np.abs(wave_first-5901)==np.nanmin(np.abs(wave_first-5901)))[0][0]
+        print na_5896_ind_low,na_5896_ind_upp
+        na_5896_ar_0=ovs_data[o,0,na_5896_ind_low:na_5896_ind_upp]
+        #na_5896_ac_0=np.where(ovs_data[o,0,:]==np.nanmin(na_5896_ar_0))[0][0]
+        na_5896_ac_0=np.argmin(na_5896_ar_0)
+        
+        for t in range(0,n_exp):
+            #identify line locations in each exposure
+            o2_7594_ar=ovs_data[o,t,o2_7594_ind_low:o2_7594_ind_upp]
+            #o2_7594_ac=np.where(ovs_data[o,t,:]==np.nanmin(o2_7594_ar))[0][0]
+            o2_7594_ac=np.argmin(o2_7594_ar)
+        
+            o2_6867_ar=ovs_data[o,t,o2_6867_ind_low:o2_6867_ind_upp]
+            #o2_6867_ac=np.where(ovs_data[o,t,:]==np.nanmin(o2_6867_ar))[0][0]
+            o2_6867_ac=np.argmin(o2_6867_ar)
+        
+            ha_6563_ar=ovs_data[o,t,ha_6563_ind_low:ha_6563_ind_upp]
+            #ha_6563_ac=np.where(ovs_data[o,t,:]==np.nanmin(ha_6563_ar))[0][0]
+            ha_6563_ac=np.argmin(ha_6563_ar)
+        
+            na_5896_ar=ovs_data[o,t,na_5896_ind_low:na_5896_ind_upp]
+            #na_5896_ac=np.where(ovs_data[o,t,:]==np.nanmin(na_5896_ar))[0][0]
+            na_5896_ac=np.argmin(na_5896_ar)
+       
+            #calculating line shifts
+        
+            shift_o2_7594=o2_7594_ac_0-o2_7594_ac
+            shift_o2_6867=o2_6867_ac_0-o2_6867_ac
+            shift_ha_6563=ha_6563_ac_0-ha_6563_ac
+            shift_na_5896=na_5896_ac_0-na_5896_ac
+            
+            shift=np.nanmedian([shift_o2_7594,shift_o2_6867,shift_ha_6563,shift_na_5896])
+            
+            if t%10==0:
+                print ' '
+                print '*****************'
+                print 'TIME: ', t
+                print 'o2_7594 shift: ', shift_o2_7594
+                print 'o2_6867 shift: ', shift_o2_6867
+                print 'ha_6563 shift: ', shift_ha_6563
+                print 'na_5896 shift: ', shift_na_5896
+            
+                print 'mean shift: ', shift, shift/osr
+            
+            shift_pixels[o,t,:]=pix_ar+shift/osr
+        
+        #time0=np.nan_to_num(ovs_data[o,0,:]/np.nanmax(ovs_data[o,0,:]))
+        #for t in range(0,n_exp):
+        #    comp=np.nan_to_num(ovs_data[o,t,:]/np.nanmax(ovs_data[o,t,:]))
+        #    pix_shift=np.argmax(np.correlate(time0,comp,'full'))-(len(pix_ar_os)-1)
+        #    if t%10==0:
+        #        print '    -->> TIME: ',t,'    pixel shift: ',float(pix_shift)/float(osr)
+        #    if o==0:
+        #        shift_pixels[o,t,:]=pix_ar
+        #    else:
+        #        shift_pixels[o,t,:]=pix_ar+float(pix_shift)/float(osr)
+        #    
+        #    if binn>1:
+        #       dummy_array=np.empty([n_obj,n_exp,n_pix])
+        #        dummy_array[o,t,:]=shift_pixels[o,t,:]
+        #        for d in range(0,n_pix):
+        #            if dummy_array[o,t,d]<ypixels:
+        #                dummy_array[o,t,d]=dummy_array[o,t,d]*2
+        #            if dummy_array[o,t,d]>ypixels:
+        #                dummy_array[o,t,d]=(dummy_array[o,t,d]-ygap)*2+ygap
         
         #### wavelength solution ####
-        yflp=2*ypixels+ygap
         
         #if o==0:
         #    filew=wavelength_path+obj_name+'_out.txt'
@@ -164,19 +252,20 @@ def AlignSpec(osr,window,fwhm,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex
         #    new_pix=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[1])
         #    cor_wav=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[2])
         #else:
-        filew=wavelength_path+'Cal_'+str(int(o))+'_out.txt'
-        if o==6:
-            ALL_PIXELS[o,:]=ALL_PIXELS[0,:]
-            wav_ar[o,:,:]=wav_ar[0,:,:]
-            print '--------- BAD WAVELENGTH SOLUTION'
-            
-            
-        else:
-            coeff=np.genfromtxt(filew,skip_header=4,skip_footer=25,usecols=[1])
-            new_pix=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[1])
-            cor_wav=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[2])
-            
-            order=len(coeff)-1
+        #filew=wavelength_path+'Cal_'+str(int(o))+'_out.txt'
+        #if o==6 or o==9:
+        #    ALL_PIXELS[o,:]=ALL_PIXELS[0,:]
+        #    wav_ar[o,:,:]=wav_ar[0,:,:]
+        #    print '--------- BAD WAVELENGTH SOLUTION'
+        #    
+        #    
+        #    
+        #else:
+        #    coeff=np.genfromtxt(filew,skip_header=4,skip_footer=25,usecols=[1])
+        #    new_pix=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[1])
+        #    cor_wav=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[2])
+        #    
+        #   order=len(coeff)-1
             
             #wav_func=np.poly1d(np.polyfit(new_pix,cor_wav,order))
             #if binn>1:
@@ -191,7 +280,6 @@ def AlignSpec(osr,window,fwhm,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex
             #y1_fflip=yflp-lowy_fir
             #y0_fflip=yflp-topy_fir
             
-            ALL_PIXELS=np.empty([n_obj,len(new_pix)])
             
         #y0=np.int(masks[o,1])
         #ywid=(np.int(masks[o,3]-masks[o,1]))
@@ -201,10 +289,7 @@ def AlignSpec(osr,window,fwhm,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex
         #y1_o=yflp-lowy
         #y0_o=yflp-topy
     
-        #print y0_fflip-y0_o
-            ALL_PIXELS[o,:]=new_pix#-(y0_fflip-y0_o)
-            wav_func=np.poly1d(np.polyfit(ALL_PIXELS[o,:],cor_wav,order))
-            wav_ar[o,:,:]=wav_func(shift_pixels[o,:,:])
+        wav_ar[o,:,:]=wav_func(shift_pixels[o,:,:])
         
         #interperolated data
         #for t in range(0,n_exp):
