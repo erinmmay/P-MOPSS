@@ -23,11 +23,15 @@ def BinWhite(SAVEPATH,midtime,start,end,corr):
         #cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All.npz')['convolved']
         cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All.npz')['data']
         wav_arr=np.load(SAVEPATH+'ShiftedSpec_All.npz')['wave']
-        ptn_err=np.load(SAVEPATH+'FlattenedSpectra.npz')['pht_err']
-        tot_err=np.load(SAVEPATH+'FlattenedSpectra.npz')['tot_err']
+        #ptn_err=np.load(SAVEPATH+'FlattenedSpectra.npz')['pht_err']
+        #tot_err=np.load(SAVEPATH+'FlattenedSpectra.npz')['tot_err']
+   
     
     cnt_arr=np.flip(cnt_arr,axis=2)
     wav_arr=np.flip(wav_arr,axis=2)
+    
+    ptn_err=np.sqrt(cnt_arr)
+    tot_err=ptn_err
     
     n_obj=cnt_arr.shape[0]
     n_exp=cnt_arr.shape[1]
@@ -157,11 +161,15 @@ def BinLam(SAVEPATH,midtime,start,end,width,corr):
         cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All.npz')['data']
         wav_arr=np.load(SAVEPATH+'ShiftedSpec_All.npz')['wave']
     
-        ptn_err=np.load(SAVEPATH+'FlattenedSpectra.npz')['pht_err']
-        tot_err=np.load(SAVEPATH+'FlattenedSpectra.npz')['tot_err']
+        #ptn_err=np.load(SAVEPATH+'FlattenedSpectra.npz')['pht_err']
+        #tot_err=np.load(SAVEPATH+'FlattenedSpectra.npz')['tot_err']
+   
     
     cnt_arr=np.flip(cnt_arr,axis=2)
     wav_arr=np.flip(wav_arr,axis=2)
+    
+    ptn_err=np.sqrt(cnt_arr)
+    tot_err=ptn_err
     
     n_obj=cnt_arr.shape[0]
     n_exp=cnt_arr.shape[1]

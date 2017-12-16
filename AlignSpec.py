@@ -17,7 +17,7 @@ from setup import *
 def func_gaus(x,sigma):
     return 1.0-np.exp(-(1./2.)*(x/(sigma))**2.)
 
-def AlignSpec(osr,window,fwhm,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn,corr):
+def AlignSpec(osr,window,fwhm,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn,corr,skip):
     masks=np.load(SAVEPATH+'FinalMasks.npz')['masks']
     if corr==True:
         input_data=np.load(SAVEPATH+'FlattenedSpectra_Corr.npz')['flat_spec']
@@ -54,7 +54,7 @@ def AlignSpec(osr,window,fwhm,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex
         print '-----------------'
         print '  OBJECT # ', o
         print '-----------------'
-        if o==1 or o==2 or o==6 or o==9:
+        if o in skip:
             print '--------- BAD WAVELENGTH SOLUTION'  
             continue
         
