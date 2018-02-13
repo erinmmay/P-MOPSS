@@ -1,8 +1,6 @@
 import numpy as np
 np.seterr('ignore')
 
-import astropy
-
 import scipy
 from scipy.optimize import curve_fit
 
@@ -10,10 +8,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridsec
 
-from setup import *
-
-    
-def BinFun(data,wave,start,end,width):
+#from setup import *
+def BinFunc(data,wave,start,end,width):
     #cnt_arr=np.load(DATAFILE)['data']
     #wav_arr=np.load(DATAFILE)['wave']
     
@@ -83,21 +79,21 @@ def BinFun(data,wave,start,end,width):
                 upperbound=(wav_arr[p+1]+wav_arr[p])/2.
                 if wave_cntr>lowerbound and wave_cntr<upperbound:
                     percent=1.0-(wave_cntr-lowerbound)/(upperbound-lowerbound)
-                    counts+=np.nan_to_num(percent*cnt_arr[p])
-                    print 'CASE A', bine, p, wav_arr[p], wave_cntr,counts,'..',cnt_arr[p],percent,lowerbound,upperbound
+                    counts+=np.nan_to_num(percent*cnt_arr[p])*(upperbound-lowerbound)
+                    #print 'CASE A', bine, p, wav_arr[p], wave_cntr,counts,'..',cnt_arr[p],percent,lowerbound,upperbound
                             #err1+=np.nan_to_num(((percent*err_up[t-1,p,s]))**2.)
                             #err2+=np.nan_to_num(((percent*err_dn[t-1,p,s]))**2.)
                             #ptne+=np.nan_to_num(((percent*ptn_err[t-1,p,s]))**2.)               
                 if wave_cntr<lowerbound and wave_cntr+width_bin>upperbound:
-                    counts+=np.nan_to_num(cnt_arr[p])
-                    print 'CASE B', bine, p, wav_arr[p], wave_cntr,counts,'..',cnt_arr[p]
+                    counts+=np.nan_to_num(cnt_arr[p])*(upperbound-lowerbound)
+                    #print 'CASE B', bine, p, wav_arr[p], wave_cntr,counts,'..',cnt_arr[p]
                             #err1+=np.nan_to_num(((err_up[t-1,p,s]))**2.)
                             #err2+=np.nan_to_num(((err_dn[t-1,p,s]))**2.)
                             #ptne+=np.nan_to_num(((ptn_err[t-1,p,s]))**2.)
                 if wave_cntr+width_bin>lowerbound and wave_cntr+width_bin<upperbound:
                     percent=(wave_cntr+width_bin-lowerbound)/(upperbound-lowerbound)
-                    counts+=np.nan_to_num(percent*cnt_arr[p])
-                    print 'CASE C', bine, p, wav_arr[p], wave_cntr,counts,'..',cnt_arr[p],percent,lowerbound,upperbound
+                    counts+=np.nan_to_num(percent*cnt_arr[p])*(upperbound-lowerbound)
+                    #print 'CASE C', bine, p, wav_arr[p], wave_cntr,counts,'..',cnt_arr[p],percent,lowerbound,upperbound
                             #err1+=np.nan_to_num(((percent*err_up[t-1,p,s]))**2.)
                             #err2+=np.nan_to_num(((percent*err_dn[t-1,p,s]))**2.)
                             #ptne+=np.nan_to_num(((percent*ptn_err[t-1,p,s]))**2.)
@@ -112,11 +108,11 @@ def BinFun(data,wave,start,end,width):
                 #bin_ptn[t-1,bin,s]=np.sqrt(ptne)
         wave_cntr+=width_bin
         bine+=1
-        print '--------------------------'
+        #print '--------------------------'
                 #if t%10==0:
                 #    print '             ->', counts
-    plt.figure(1,figsize=((end-start)/400,4.))
     plt.clf()
+    plt.figure(1,figsize=((end-start)/400,4.))
     plt.plot(wav_arr,cnt_arr/np.nanmax(cnt_arr),color='black')
     plt.plot(bin_ctr,bin_cnt/np.nanmax(bin_cnt),'.',markersize=10,color='red')
        # plt.errorbar(bin_ctr,bin_cnt[0,:,s]/np.nanmax(bin_cnt[0,:,s]),yerr=10*bin_err[0,:,s]/np.nanmax(bin_cnt[0,:,s]),fmt=None,ecolor='red')
@@ -128,7 +124,7 @@ def BinFun(data,wave,start,end,width):
     plt.ylabel('Relative Flux',fontsize=15)
     #plt.figtext(0.15,0.80,'obj'+str(int(s)),fontsize=25,color='red')
     plt.show(block=False)
-    plt.pause(2.0)
+    #plt.pause(2.0)
     plt.close()
     #np.savez_compressed(SAVEPATH+'Binned_Data.npz',bins=bin_arr,bin_centers=bin_ctr,bin_counts=bin_cnt)
     return bin_ctr,bin_cnt
