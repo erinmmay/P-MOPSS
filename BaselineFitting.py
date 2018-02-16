@@ -131,7 +131,8 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
     avgF=np.empty([len(time0)/z,len(bin_ctr)])*np.nan
 
     for b in range(0,LC_l.shape[1]):
-        if np.isnan(LC_l[2,b])==True:
+        if np.isnan(LC_l[0,b])==True or np.isnan(LC_l[1,b])==True or np.isnan(LC_l[2,b])==True:
+            print '---------', bin_ctr[b],'---------'
             continue
         for f in range(0,LC_l.shape[0]):
             if LC_l[f,b]<low or LC_l[f,b]>high:

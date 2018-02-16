@@ -104,7 +104,7 @@ def LCgen_white(SAVEPATH,corr,Cals_ind,csn):
 
     ax[2].plot(time0,LCd,'.',color='grey')
     ax[2].errorbar(time0,LCd,yerr=es*errs_lcd_w_t,ecolor='grey',elinewidth=0.5,alpha=0.5,zorder=9,fmt=None)
-    ax[2].set_ylim(0.95,1.04)
+    ax[2].set_ylim(ymin_lc-0.01,ymax_lc+0.01)
     ax[2].set_title('Divided - WHITE')
     ax[2].set_xlabel('Time,[days]')
     #ax[1].set_ylabel('Relative Flux')
@@ -234,7 +234,7 @@ def LCgen_binns(SAVEPATH,width,corr,Cals_ind,csn):
     
         ax[2].plot(time0,LC_d[:,b],'.',color=scal_m.to_rgba(bin_ctr[b]))
         ax[2].errorbar(time0,LC_d[:,b],yerr=es*errs_lcd_l_t[:,b],ecolor=scal_m.to_rgba(bin_ctr[b]),elinewidth=0.5,alpha=0.5,zorder=9,fmt=None)
-        ax[2].set_ylim(0.94,1.06)
+        ax[2].set_ylim(ymin_lc-0.01,ymax_lc+0.01)
         ax[2].set_title('Divided - ' +str(int(bin_ctr[b])))
         ax[2].set_xlabel('Time,[days]')
         #ax[1].set_ylabel('Relative Flux')

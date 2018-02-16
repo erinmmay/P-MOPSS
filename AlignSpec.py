@@ -17,7 +17,7 @@ from setup import *
 def func_gaus(x,sigma):
     return 1.0-np.exp(-(1./2.)*(x/(sigma))**2.)
 
-def AlignSpec(osr,fwhm,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn,corr,ver,time_trim,skip):
+def AlignSpec(osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn,corr,ver,time_trim,skip):
     masks=np.load(SAVEPATH+'FinalMasks.npz')['masks']
     if corr==True:
         input_data=np.load(SAVEPATH+'FlattenedSpectra_Corr.npz')['flat_spec']
@@ -105,6 +105,7 @@ def AlignSpec(osr,fwhm,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn,c
         
         print ' --Convolving with Gaussian...'
         if fwhm_t==False:
+            fwhm=fwhm_s
             sigma=fwhm/2.355
             width=2.*fwhm
             width_line=np.linspace(-width/2,width*2.,width)
@@ -118,6 +119,8 @@ def AlignSpec(osr,fwhm,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn,c
             
             for t in range(0,n_exp-time_trim):
                 fwhm=fwhm_arr[o,t]
+                if np.isfinite(fwhm)==False:
+                    fwhm=fwhm_s
                 sigma=fwhm/2.355
                 width=2.*fwhm
                 width_line=np.linspace(-width/2,width*2.,width)
