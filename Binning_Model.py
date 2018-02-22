@@ -1,5 +1,5 @@
 import numpy as np
-np.seterr('ignore')
+#np.seterr('ignore')
 
 import scipy
 from scipy.optimize import curve_fit
@@ -13,6 +13,8 @@ def BinFunc(data,wave,start,end,width):
     #cnt_arr=np.load(DATAFILE)['data']
     #wav_arr=np.load(DATAFILE)['wave']
     
+    #cnt_arr=np.flip(data,axis=0)
+    #wav_arr=np.flip(wave,axis=0)
     cnt_arr=data
     wav_arr=wave
     
@@ -32,11 +34,11 @@ def BinFunc(data,wave,start,end,width):
     for b in range(0,len(bin_arr)-1):
         bin_ctr=np.append(bin_ctr,bin_arr[b]+width_bin/2.)
     
-    print( '  -->> From Lambda=', start, ' to Lambda=', end)
+    """print( '  -->> From Lambda=', start, ' to Lambda=', end)
     print( '  -->> TOTAL OF ', numbins, 'WAVELENGTH BINS')
     print( '       Bin Centers: ', bin_ctr)
     print( '       Bin Array:   ', bin_arr)
-    print( '       Bin Width:   ', width_bin)
+    print( '       Bin Width:   ', width_bin)"""
     
     norm=matplotlib.colors.Normalize(vmin=np.min(bin_arr),vmax=np.max(bin_arr))
     #colors=matplotlib.cm.RdYlBu_r
@@ -67,7 +69,11 @@ def BinFunc(data,wave,start,end,width):
     p+=1
     while wav_arr[p]>wave_cntr+width_bin:
                 #print p,wav_arr[s,t,p]
+        #print(wav_arr[p], wave_cntr+width_bin)
         wave_cntr+=width_bin
+    #print(p)
+    #print(wave_cntr)
+    #print(bin_arr[-1])
     while wave_cntr<bin_arr[-1] and p < pixels-1:
         counts=0
         counter=0
@@ -77,22 +83,24 @@ def BinFunc(data,wave,start,end,width):
             while (wav_arr[p-1]+wav_arr[p])/2. < wave_cntr+width_bin and p <pixels-1:
                 lowerbound=(wav_arr[p-1]+wav_arr[p])/2.
                 upperbound=(wav_arr[p+1]+wav_arr[p])/2.
+                deltawave=upperbound-lowerbound
+                #print deltawave
                 if wave_cntr>lowerbound and wave_cntr<upperbound:
                     percent=1.0-(wave_cntr-lowerbound)/(upperbound-lowerbound)
-                    counts+=np.nan_to_num(percent*cnt_arr[p])*(upperbound-lowerbound)
+                    counts+=np.nan_to_num(percent*cnt_arr[p])
                     #print 'CASE A', bine, p, wav_arr[p], wave_cntr,counts,'..',cnt_arr[p],percent,lowerbound,upperbound
                             #err1+=np.nan_to_num(((percent*err_up[t-1,p,s]))**2.)
                             #err2+=np.nan_to_num(((percent*err_dn[t-1,p,s]))**2.)
                             #ptne+=np.nan_to_num(((percent*ptn_err[t-1,p,s]))**2.)               
                 if wave_cntr<lowerbound and wave_cntr+width_bin>upperbound:
-                    counts+=np.nan_to_num(cnt_arr[p])*(upperbound-lowerbound)
+                    counts+=np.nan_to_num(cnt_arr[p])
                     #print 'CASE B', bine, p, wav_arr[p], wave_cntr,counts,'..',cnt_arr[p]
                             #err1+=np.nan_to_num(((err_up[t-1,p,s]))**2.)
                             #err2+=np.nan_to_num(((err_dn[t-1,p,s]))**2.)
                             #ptne+=np.nan_to_num(((ptn_err[t-1,p,s]))**2.)
                 if wave_cntr+width_bin>lowerbound and wave_cntr+width_bin<upperbound:
                     percent=(wave_cntr+width_bin-lowerbound)/(upperbound-lowerbound)
-                    counts+=np.nan_to_num(percent*cnt_arr[p])*(upperbound-lowerbound)
+                    counts+=np.nan_to_num(percent*cnt_arr[p])
                     #print 'CASE C', bine, p, wav_arr[p], wave_cntr,counts,'..',cnt_arr[p],percent,lowerbound,upperbound
                             #err1+=np.nan_to_num(((percent*err_up[t-1,p,s]))**2.)
                             #err2+=np.nan_to_num(((percent*err_dn[t-1,p,s]))**2.)
@@ -112,7 +120,7 @@ def BinFunc(data,wave,start,end,width):
                 #if t%10==0:
                 #    print '             ->', counts
     plt.clf()
-    plt.figure(1,figsize=((end-start)/400,4.))
+    """plt.figure(1,figsize=((end-start)/400,4.))
     plt.plot(wav_arr,cnt_arr/np.nanmax(cnt_arr),color='black')
     plt.plot(bin_ctr,bin_cnt/np.nanmax(bin_cnt),'.',markersize=10,color='red')
        # plt.errorbar(bin_ctr,bin_cnt[0,:,s]/np.nanmax(bin_cnt[0,:,s]),yerr=10*bin_err[0,:,s]/np.nanmax(bin_cnt[0,:,s]),fmt=None,ecolor='red')
@@ -125,7 +133,7 @@ def BinFunc(data,wave,start,end,width):
     #plt.figtext(0.15,0.80,'obj'+str(int(s)),fontsize=25,color='red')
     plt.show(block=False)
     #plt.pause(2.0)
-    plt.close()
+    plt.close()"""
     #np.savez_compressed(SAVEPATH+'Binned_Data.npz',bins=bin_arr,bin_centers=bin_ctr,bin_counts=bin_cnt)
     return bin_ctr,bin_cnt
     

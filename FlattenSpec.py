@@ -102,7 +102,7 @@ def gaussian_filter(ver,i,t,j,y_start,pixels,data,ks,std,fpixs,fdat,gaus_params)
                     
     return counter,fdat,gaus_params
 
-def FlattenSpec(extray,SAVEPATH,corr,ed_l,ed_u,ed_t,ks_b,ks_d,sig_b,sig_d,ver,data_corr,time_trim,obj_skip):
+def FlattenSpec(extray,SAVEPATH,corr,ed_l,ed_u,ed_t,ks_b,ks_d,sig_b,sig_d,ver,data_corr,trip,time_trim,obj_skip):
     #extray= number of pixels in y direction extra that were extracted
     #SAVEPATH= location of saved 2D spec
     #filename= name of saved file
@@ -196,6 +196,8 @@ def FlattenSpec(extray,SAVEPATH,corr,ed_l,ed_u,ed_t,ks_b,ks_d,sig_b,sig_d,ver,da
                 #do background outlier detection and replacement.... (twice)
                 n_replace1,bg_dat=median_filter(bg_pix,bg_dat,ks_b,sig_b)
                 n_replace2,bg_dat=median_filter(bg_pix,bg_dat,ks_b,sig_b)
+                if trip==True:
+                    n_replace3,bg_dat=median_filter(bg_pix,bg_dat,ks_b,sig_b)
                 
                 #if t%10==0 and j%100==0:
                 #    print '       -- ROW: ', j, '  removed ', n_replace1,n_replace2,' bg outliers'
@@ -233,6 +235,10 @@ def FlattenSpec(extray,SAVEPATH,corr,ed_l,ed_u,ed_t,ks_b,ks_d,sig_b,sig_d,ver,da
                          ver,i,t,j,y_start,d_pix,d_dat,ks_d,sig_d,xpix_ar,row_data,gaus_params)
                     
                     dreplace2,row_data,gaus_params=gaussian_filter(
+                         ver,i,t,j,y_start,d_pix,d_dat,ks_d,sig_d,xpix_ar,row_data,gaus_params)
+                    
+                    if trip==True:
+                        dreplace3,row_data,gaus_params=gaussian_filter(
                          ver,i,t,j,y_start,d_pix,d_dat,ks_d,sig_d,xpix_ar,row_data,gaus_params)
                 
                 corr_sv[t,j+y_start,:]=row_data
