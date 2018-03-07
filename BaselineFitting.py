@@ -63,6 +63,15 @@ def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr):
     out0=tests(oot_t0)
 
     new=(LC)/out
+    
+    
+    ta=(np.append(time0[np.where(time0<timein)],time0[np.where(time0>timeeg)]))
+    Fa=(np.append(LC[np.where(time0<timein)],LC[np.where(time0>timeeg)]))
+    
+    ta=ta[~np.isnan(Fa)]
+    Fa=Fa[~np.isnan(Fa)]
+    
+    RMSE_est=np.sqrt(np.nanmean(((Fa/tests(ta))-1.0)**2.))
 
     fig,ax=plt.subplots(1,2,figsize=(10,4))
     ax[0].plot(time0,LC,'.',markersize=9,color='darkgrey',alpha=0.3)
@@ -80,15 +89,17 @@ def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr):
     ax[1].plot(oot_t0,oot_F0/out0,'.',markersize=11.,color='dimgrey')
     ax[1].plot(time0,out/out,'-',color='black')
     ax[1].set_ylim(ybot,ytop)
-    ax[1].set_title('WHITE')
+    ax[1].set_title(str(np.round(RMSE_est,6)),fontsize=15)
     ax[1].set_xlabel('Time,[hrs]')
     ax[1].set_ylabel('Relative Flux [hrs]')
     plt.show()
 
     if corr==True:
-        np.savez_compressed(SAVEPATH+'LCwhite_br_Corr.npz',data=new,time=time0,err_t=err_t,err_p=err_p,avt=oot_t0,avf=oot_F0/out0)
+        np.savez_compressed(SAVEPATH+'LCwhite_br_Corr.npz',
+                            data=new,time=time0,rmse=RMSE_est,err_t=err_t,err_p=err_p,avt=oot_t0,avf=oot_F0/out0)
     else:
-        np.savez_compressed(SAVEPATH+'LCwhite_br.npz',data=new,time=time0,err_t=err_t,err_p=err_p,avt=oot_t0,avf=oot_F0/out0)
+        np.savez_compressed(SAVEPATH+'LCwhite_br.npz',
+                            data=new,time=time0,rmse=RMSE_est,err_t=err_t,err_p=err_p,avt=oot_t0,avf=oot_F0/out0)
 
         
 def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr):
@@ -129,6 +140,7 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
     scal_m.set_array([])
     
     avgF=np.empty([len(time0)/z,len(bin_ctr)])*np.nan
+    RMSE_est=np.empty([len(bin_ctr)])*np.nan
 
     for b in range(0,LC_l.shape[1]):
         if np.isnan(LC_l[0,b])==True or np.isnan(LC_l[1,b])==True or np.isnan(LC_l[2,b])==True:
@@ -156,6 +168,8 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
     
         oot_t=oot_t[:-1]
         oot_F=oot_F[:-1]
+        
+       
     
         test=np.polyfit(oot_t,oot_F,order)
         tests=np.poly1d(test)
@@ -165,6 +179,15 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
         new[:,b]=(LCb)/out
     
         avgF[:,b]=oot_F0/out0
+        
+        ta=(np.append(time0[np.where(time0<timein)],time0[np.where(time0>timeeg)]))
+        Fa=(np.append(LCb[np.where(time0<timein)],LCb[np.where(time0>timeeg)]))
+        
+        ta=ta[~np.isnan(Fa)]
+        Fa=Fa[~np.isnan(Fa)]
+        
+        RMSE_est[b]=np.sqrt(np.nanmean(((Fa/tests(ta))-1.0)**2.))
+
     
         fig,ax=plt.subplots(1,2,figsize=(10,4))
         ax[0].plot(time0,LCb,'.',markersize=9.,color=scal_m.to_rgba(bin_ctr[b]),alpha=0.2)
@@ -178,13 +201,15 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
         ax[1].plot(time0,new[:,b],'.',markersize=9.,color=scal_m.to_rgba(bin_ctr[b]),alpha=0.2)
         ax[1].plot(oot_t0,oot_F0/out0,'.',markersize=11.,color=scal_m.to_rgba(bin_ctr[b]+width))
         ax[1].plot(time0,out/out,'-',color='black')
+        ax[1].set_title(str(np.round(RMSE_est[b],6)),fontsize=15)
         ax[1].set_ylim(ybot,ytop)
-        ax[1].set_title(str(int(bin_ctr[b])))
         ax[1].set_xlabel('Time,[hrs]')
         ax[1].set_ylabel('Relative Flux [hrs]')
         plt.show()
 
     if corr==True:
-        np.savez_compressed(SAVEPATH+'LC_bins_br_'+str(int(width))+'_Corr.npz',data=new,time=time0,bin_ctr=bin_ctr,err_t=err_t,err_p=err_p,avt=oot_t0,avf=avgF)
+        np.savez_compressed(SAVEPATH+'LC_bins_br_'+str(int(width))+'_Corr.npz',
+                            data=new,time=time0,rmse=RMSE_est,bin_ctr=bin_ctr,err_t=err_t,err_p=err_p,avt=oot_t0,avf=avgF)
     else:
-        np.savez_compressed(SAVEPATH+'LC_bins_br_'+str(int(width))+'.npz',data=new,time=time0,bin_ctr=bin_ctr,err_t=err_t,err_p=err_p,avt=oot_t0,avf=avgF)
+        np.savez_compressed(SAVEPATH+'LC_bins_br_'+str(int(width))+'.npz',
+                            data=new,time=time0,rmse=RMSE_est,bin_ctr=bin_ctr,err_t=err_t,err_p=err_p,avt=oot_t0,avf=avgF)
