@@ -12,7 +12,7 @@ import matplotlib.gridspec as gridsec
 
 from setup import *
 
-def BinWhite(SAVEPATH,midtime,start,end,corr):
+def BinWhite(SAVEPATH,midtime,start,end,corr,flip):
     if corr==True:
         #cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All_Corr.npz')['convolved']
         cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All_Corr.npz')['data']
@@ -26,9 +26,9 @@ def BinWhite(SAVEPATH,midtime,start,end,corr):
         #ptn_err=np.load(SAVEPATH+'FlattenedSpectra.npz')['pht_err']
         #tot_err=np.load(SAVEPATH+'FlattenedSpectra.npz')['tot_err']
    
-    
-    cnt_arr=np.flip(cnt_arr,axis=2)
-    wav_arr=np.flip(wav_arr,axis=2)
+    if flip==True:
+        cnt_arr=np.flip(cnt_arr,axis=2)
+        wav_arr=np.flip(wav_arr,axis=2)
     
     ptn_err=np.sqrt(cnt_arr)
     tot_err=ptn_err
@@ -131,9 +131,10 @@ def BinWhite(SAVEPATH,midtime,start,end,corr):
                 #    print '             ->', counts
         plt.figure(1,figsize=((end-start)/400,4.))
         plt.clf()
-        plt.plot(wav_arr[s,0,:],cnt_arr[s,0,:]/np.nanmax(cnt_arr[s,0,:]),color='black')
-        plt.plot(bin_ctr,bin_cnt[0,:,s]/np.nanmax(bin_cnt[0,:,s]),'.',markersize=10,color='red')
-        plt.errorbar(bin_ctr,bin_cnt[0,:,s]/np.nanmax(bin_cnt[0,:,s]),yerr=10*bin_err[0,:,s]/np.nanmax(bin_cnt[0,:,s]),fmt=None,ecolor='red')
+        plt.plot(wav_arr[s,10,:],cnt_arr[s,10,:]/np.nanmax(cnt_arr[s,10,:]),color='black')
+        plt.plot(bin_ctr,bin_cnt[10,:,s]/np.nanmax(bin_cnt[10,:,s]),'.',markersize=10,color='red')
+        plt.errorbar(bin_ctr,bin_cnt[10,:,s]/np.nanmax(bin_cnt[10,:,s]),
+                     yerr=10*bin_err[10,:,s]/np.nanmax(bin_cnt[10,:,s]),fmt=None,ecolor='red')
         for b in bin_arr:
             plt.axvline(x=b,color='grey',linewidth=0.5)
         plt.ylim(-0.1,1.4)
@@ -150,7 +151,7 @@ def BinWhite(SAVEPATH,midtime,start,end,corr):
     else:
         np.savez_compressed(SAVEPATH+'Binned_Data_White.npz',bins=bin_arr,bin_centers=bin_ctr,bin_counts=bin_cnt,bin_err=bin_err,bin_ptn=bin_ptn)
     
-def BinLam(SAVEPATH,midtime,start,end,width,corr):
+def BinLam(SAVEPATH,midtime,start,end,width,corr,flip):
     if corr==True:
         cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All_Corr.npz')['data']
         wav_arr=np.load(SAVEPATH+'ShiftedSpec_All_Corr.npz')['wave']
@@ -164,9 +165,9 @@ def BinLam(SAVEPATH,midtime,start,end,width,corr):
         #ptn_err=np.load(SAVEPATH+'FlattenedSpectra.npz')['pht_err']
         #tot_err=np.load(SAVEPATH+'FlattenedSpectra.npz')['tot_err']
    
-    
-    cnt_arr=np.flip(cnt_arr,axis=2)
-    wav_arr=np.flip(wav_arr,axis=2)
+    if flip==True:
+        cnt_arr=np.flip(cnt_arr,axis=2)
+        wav_arr=np.flip(wav_arr,axis=2)
     
     ptn_err=np.sqrt(cnt_arr)
     tot_err=ptn_err
@@ -274,9 +275,10 @@ def BinLam(SAVEPATH,midtime,start,end,width,corr):
                 #    print '             ->', counts
         plt.figure(1,figsize=((end-start)/400,4.))
         plt.clf()
-        plt.plot(wav_arr[s,0,:],cnt_arr[s,0,:]/np.nanmax(cnt_arr[s,0,:]),color='black')
-        plt.plot(bin_ctr,bin_cnt[0,:,s]/np.nanmax(bin_cnt[0,:,s]),'.',markersize=10,color='red')
-        plt.errorbar(bin_ctr,bin_cnt[0,:,s]/np.nanmax(bin_cnt[0,:,s]),yerr=10*bin_err[0,:,s]/np.nanmax(bin_cnt[0,:,s]),fmt=None,ecolor='red')
+        plt.plot(wav_arr[s,10,:],cnt_arr[s,10,:]/np.nanmax(cnt_arr[s,10,:]),color='black')
+        plt.plot(bin_ctr,bin_cnt[10,:,s]/np.nanmax(bin_cnt[10,:,s]),'.',markersize=10,color='red')
+        plt.errorbar(bin_ctr,bin_cnt[10,:,s]/np.nanmax(bin_cnt[10,:,s]),
+                     yerr=10*bin_err[10,:,s]/np.nanmax(bin_cnt[10,:,s]),fmt=None,ecolor='red')
         for b in bin_arr:
             plt.axvline(x=b,color='grey',linewidth=0.5)
         plt.ylim(-0.1,1.4)

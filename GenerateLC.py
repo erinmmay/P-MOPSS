@@ -19,8 +19,9 @@ def LCgen_white(SAVEPATH,corr,Cals_ind,csn):
         errsw_p=np.load(SAVEPATH+'Binned_Data_White.npz')['bin_ptn']
 
     time0=np.load(SAVEPATH+'Obs_times.npz')['times']
-
-
+    n_exp=len(time0)
+         
+        
 
 #W52- 2,3,5,7,8
     #Cals_ind=np.array([2,3,5,8])
