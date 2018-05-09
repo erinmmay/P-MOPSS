@@ -43,7 +43,7 @@ def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,noise
         
         bg=(model_inputs['white_bg']).reshape(-1,1)
         
-        airmass=(1./np.load(SAVEPATH+'HeaderData.npz')['airmass']).reshape(-1,1)
+        airmass=(np.load(SAVEPATH+'HeaderData.npz')['airmass']).reshape(-1,1)
         median_fwhm=(np.load(SAVEPATH+'FlattenedSpectra.npz')['fwhm_av'])[0,:].reshape(-1,1)
         ones=(np.ones(n_exp)).reshape(-1,1)
             
@@ -229,10 +229,10 @@ def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,noise
     
     if corr==True:
         np.savez_compressed(SAVEPATH+'LCwhite_br_Corr.npz',data=new,time=time0,rmse=RMSE_est,
-                            err_t=err_t,err_p=err_p,avt=oot_t0,avf=oot_F0/out0)
+                            err_t=err_t,err_p=err_p,avt=oot_t0,avf=oot_F0/out0,beta=beta_arr)
     else:
         np.savez_compressed(SAVEPATH+'LCwhite_br.npz',data=new,time=time0,rmse=RMSE_est,
-                            err_t=err_t,err_p=err_p,avt=oot_t0,avf=oot_F0/out0)
+                            err_t=err_t,err_p=err_p,avt=oot_t0,avf=oot_F0/out0,beta=beta_arr)
 
         
 def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,white,noise_red):
@@ -282,6 +282,8 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
     
     avgF=np.empty([len(time0)/z,len(bin_ctr)])*np.nan
     RMSE_est=np.empty([len(bin_ctr)])*np.nan
+    
+    beta_arr=np.empty([LC_l.shape[1],9])
 
     for b in range(0,LC_l.shape[1]):
         if np.isnan(LC_l[0,b])==True or np.isnan(LC_l[1,b])==True or np.isnan(LC_l[2,b])==True:
@@ -305,7 +307,7 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
 
             bg=((model_inputs['binned_bg'])[:,b]).reshape(-1,1)
 
-            airmass=(1./np.load(SAVEPATH+'HeaderData.npz')['airmass']).reshape(-1,1)
+            airmass=(np.load(SAVEPATH+'HeaderData.npz')['airmass']).reshape(-1,1)
             median_fwhm=(np.load(SAVEPATH+'FlattenedSpectra.npz')['fwhm_av'])[0,:].reshape(-1,1)
             ones=(np.ones(n_exp)).reshape(-1,1)
 
@@ -355,9 +357,9 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
         if noise_red==True:
             X_arr=model_stack_oott
             LC_oott=np.append(new[np.where(time0<timein),b],new[np.where(time0>timeeg),b])
-            beta_arr=np.dot(np.dot(inv(np.dot(X_arr.T,X_arr)),X_arr.T),LC_oott)
+            beta_arr[b,:]=np.dot(np.dot(inv(np.dot(X_arr.T,X_arr)),X_arr.T),LC_oott)
 
-            noise_model_fit=np.dot(model_stack_full,beta_arr)
+            noise_model_fit=np.dot(model_stack_full,beta_arr[b,:])
         
 
         if noise_red==True:
@@ -425,10 +427,43 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
             ax[1].set_xlabel('Time,[hrs]')
             ax[1].set_ylabel('Relative Flux [hrs]')
             plt.show()
+            
+    #ones,airmass,median_fwhm,X_loc,Y_loc,bg,X_sq,Y_sq,XY
+    fig,ax=plt.subplots(3,3,figsize=(15,12))
+    ax[0,0].plot(bin_ctr,beta_arr[:,3],linewidth=4.0,color='slateblue',alpha=0.7)
+    ax[0,0].set_title('X_shift')
+
+    ax[0,1].plot(bin_ctr,beta_arr[:,4],linewidth=4.0,color='slateblue',alpha=0.7)
+    ax[0,1].set_title('Y_shift')
+
+    ax[0,2].plot(bin_ctr,beta_arr[:,5],linewidth=4.0,color='slateblue',alpha=0.7)
+    ax[0,2].set_title('Background Counts')
+    ###
+    ax[1,0].plot(bin_ctr,beta_arr[:,6],linewidth=4.0,color='slateblue',alpha=0.7)
+    ax[1,0].set_title('X^2')
+
+    ax[1,1].plot(bin_ctr,beta_arr[:,7],linewidth=4.0,color='slateblue',alpha=0.7)
+    ax[1,1].set_title('Y^2')
+
+    ax[1,2].plot(bin_ctr,beta_arr[:,8],linewidth=4.0,color='slateblue',alpha=0.7)
+    ax[1,2].set_title('XY')
+    ###
+    ax[2,0].plot(bin_ctr,beta_arr[:,1],linewidth=4.0,color='slateblue',alpha=0.7)
+    ax[2,0].set_title('Z')
+
+    ax[2,1].plot(bin_ctr,beta_arr[:,2],linewidth=4.0,color='slateblue',alpha=0.7)
+    ax[2,1].set_title('FWHM')
+
+    ax[2,2].plot(bin_ctr,beta_arr[:,0],linewidth=4.0,color='slateblue',alpha=0.7)
+    ax[2,2].set_title('1')
+
+    plt.show()
 
     if corr==True:
         np.savez_compressed(SAVEPATH+'LC_bins_br_'+str(int(width))+'_Corr.npz',
-                            data=new,time=time0,rmse=RMSE_est,bin_ctr=bin_ctr,err_t=err_t,err_p=err_p,avt=oot_t0,avf=avgF)
+                            data=new,time=time0,rmse=RMSE_est,bin_ctr=bin_ctr,
+                            err_t=err_t,err_p=err_p,avt=oot_t0,avf=avgF,beta=beta_arr)
     else:
         np.savez_compressed(SAVEPATH+'LC_bins_br_'+str(int(width))+'.npz',
-                            data=new,time=time0,rmse=RMSE_est,bin_ctr=bin_ctr,err_t=err_t,err_p=err_p,avt=oot_t0,avf=avgF)
+                            data=new,time=time0,rmse=RMSE_est,bin_ctr=bin_ctr,
+                            err_t=err_t,err_p=err_p,avt=oot_t0,avf=avgF,beta=beta_arr)
