@@ -28,11 +28,11 @@ def AlignSpec(osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn
     n_pix=input_data.shape[2]
     
     cnv_data=np.empty([n_obj,n_exp,n_pix])*np.nan
-    ovs_data=np.empty([n_obj,n_exp,osr*n_pix])*np.nan
+    ovs_data=np.empty([n_obj,n_exp,int(osr*n_pix)])*np.nan
     int_data=np.empty([n_obj,n_exp,n_pix])*np.nan
     
     pix_ar=np.linspace(n_pix-1,0,n_pix)
-    pix_ar_os=np.linspace(n_pix-1,0,osr*n_pix)
+    pix_ar_os=np.linspace(n_pix-1,0,int(osr*n_pix))
     
     shift_pixels=np.empty([n_obj,n_exp,n_pix])*np.nan
     
@@ -219,7 +219,7 @@ def AlignSpec(osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn
             shift_na_5896=na_5896_ac_0-na_5896_ac
             
             shift=np.nanmedian([shift_o2_7594,shift_o2_6867,shift_ha_6563,shift_na_5896])
-            y_shift[o,t]=shift/osr
+            y_shift[o,t]=float(shift)/float(osr)
             
             if t%10==0:
                 print ' '
@@ -230,7 +230,7 @@ def AlignSpec(osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn
                 print 'ha_6563 shift: ', shift_ha_6563
                 print 'na_5896 shift: ', shift_na_5896
             
-                print 'mean shift: ', shift, shift/osr
+                print 'mean shift: ', shift, float(shift)/float(osr)
                 
                
                 if ver==True:
@@ -286,7 +286,7 @@ def AlignSpec(osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn
                 
                 
             
-            shift_pixels[o,t,:]=pix_ar+shift/osr
+            shift_pixels[o,t,:]=pix_ar+float(shift)/float(osr)
         
         #time0=np.nan_to_num(ovs_data[o,0,:]/np.nanmax(ovs_data[o,0,:]))
         #for t in range(0,n_exp):
@@ -361,6 +361,7 @@ def AlignSpec(osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn
         #    int_data[o,t,:]=interp1d(wav_ar[o,t,:],smooth_data[o,t,:])
         plt.figure(104,figsize=(12,3))
         plt.plot(np.linspace(1,n_exp,n_exp)[1:],y_shift[o,1:],'.',markersize=12,color='blue')
+        plt.ylim(-5,5)
         plt.show(block=False)
         
         
