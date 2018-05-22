@@ -55,6 +55,7 @@ def gaussian_filter(ver,i,t,j,y_start,pixels,data,ks,std,fpixs,fdat,gaus_params)
     
     counter=0
     
+    
     for p in range(0,len(pixels)):
         p=int(p)
         if data_median_r[p]>std*data_std+data_med or data_median_r[p]<data_med-std*data_std:
@@ -102,7 +103,8 @@ def gaussian_filter(ver,i,t,j,y_start,pixels,data,ks,std,fpixs,fdat,gaus_params)
                     
     return counter,fdat,gaus_params
 
-def FlattenSpec(extray,SAVEPATH,corr,ed_l,ed_u,ed_t,ks_b,ks_d,sig_b,sig_d,ver,data_corr,trip,time_trim,obj_skip):
+def FlattenSpec(extray,SAVEPATH,corr,Lflat,Ldark,ed_l,ed_u,ed_t,ks_b,ks_d,sig_b,sig_d,ing_fwhm,
+                ver,data_corr,trip,time_start,time_trim,obj_skip):
     #extray= number of pixels in y direction extra that were extracted
     #SAVEPATH= location of saved 2D spec
     #filename= name of saved file
@@ -130,9 +132,10 @@ def FlattenSpec(extray,SAVEPATH,corr,ed_l,ed_u,ed_t,ks_b,ks_d,sig_b,sig_d,ver,da
     gaus_params=np.empty([n_obj,n_exp,2*ypixels+ygap,4])*np.nan
     bkgd_params=np.empty([n_obj,n_exp,2*ypixels+ygap,2])*np.nan
     
-    
-    dark_var=np.load(SAVEPATH+'Darks.npz')['var']
-    flat_var=np.load(SAVEPATH+'Flats.npz')['var']
+    if Ldark==True:
+        dark_var=np.load(SAVEPATH+'Darks.npz')['var']
+    if Lflat==True:
+        flat_var=np.load(SAVEPATH+'Flats.npz')['var']
     
     fwhm_av=np.empty([n_obj,n_exp])*np.nan
     
@@ -165,7 +168,7 @@ def FlattenSpec(extray,SAVEPATH,corr,ed_l,ed_u,ed_t,ks_b,ks_d,sig_b,sig_d,ver,da
         sub_bkgd=np.empty([n_exp,2*ypixels+ygap,xwidth])*np.nan
         
         #begin loop over time...
-        for t in range(0,n_exp-time_trim):
+        for t in range(time_start,n_exp-time_trim):
             if t%10==0:
                 print '    -->> TIME: ',t
                 print '       -- Correcting and Fitting...'
@@ -216,10 +219,30 @@ def FlattenSpec(extray,SAVEPATH,corr,ed_l,ed_u,ed_t,ks_b,ks_d,sig_b,sig_d,ver,da
                 #if t%10==0:
                 #    print '       -- Fitting GAUSSIAN...'
                 #FIT GAUSSIAN WITHIN DATA REGION....
-                p0=np.array([np.nanmax(row_data),np.argmax(row_data),10,background[50]])
+                p0=np.array([np.nanmax(row_data)-background[20],np.argmax(row_data),ing_fwhm,background[20]])
                 
                 gaus_params=Fit_Gaussian(i,t,j,y_start,xpix_ar,row_data,p0,gaus_params)
-
+                
+#                 if ver==True:
+#                     if t%10==0:
+#                         if j%10==0:
+#                             print p0
+#                             print gaus_params[i,t,j+y_start,:]
+                
+                if gaus_params[i,t,j+y_start,2]>20. and t>0:
+                    gaus_params[i,t,j+y_start,:]=gaus_params[i,t-1,j+y_start,:]
+                if gaus_params[i,t,j+y_start,2]>20. and t==0:
+                    gaus_params[i,t,j+y_start,:]=p0
+                if ver==True:
+                    if t%10==0:
+                        if j%10==0:
+                            plt.figure(201,figsize=(14,4))
+                            plt.title('ROW='+str(int(j)))
+                            plt.plot(xpix_ar,row_data,color='black',linewidth=2.0)
+                            plt.plot(xpix_ar,Gaussian(xpix_ar,*p0),color='blue',linewidth=0.5)
+                            plt.plot(xpix_ar,Gaussian(xpix_ar,*gaus_params[i,t,j+y_start,:]),color='cyan',linewidth=1.0)
+                            plt.axvline(x=gaus_params[i,t,j+y_start,1],color='grey')
+                            plt.show(block=False)
                     
                 # corrections along gaussian...
                 if data_corr==True:
@@ -243,6 +266,7 @@ def FlattenSpec(extray,SAVEPATH,corr,ed_l,ed_u,ed_t,ks_b,ks_d,sig_b,sig_d,ver,da
                 
                 corr_sv[t,j+y_start,:]=row_data
             
+
             fwhm_av[i,t]=2.*np.sqrt(2.*np.log(2.))*np.nanmedian(gaus_params[i,t,:,2])
                 
             ################# VERBOSE OUTPUT #################
