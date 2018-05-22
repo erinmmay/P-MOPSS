@@ -29,14 +29,19 @@ def LCgen_white(SAVEPATH,corr,Cals_ind,csn):
     
     Cals_ind=Cals_ind
     csn=csn
-
-    Cals=np.zeros_like(Data[:,0,0])
-    errs_cw_t=np.zeros_like(Data[:,0,0])
-    errs_cw_p=np.zeros_like(Data[:,0,0])
-    for c in Cals_ind:
-        Cals=(np.nansum([Cals,Data[:,0,c]],axis=0))
-        errs_cw_t=np.sqrt(np.nansum([errs_cw_t,errsw_t[:,0,c]**2.],axis=0))
-        errs_cw_p=np.sqrt(np.nansum([errs_cw_p,errsw_p[:,0,c]**2.],axis=0))
+    
+    if len(Cals_ind)==0:
+        Cals=np.ones_like(Data[:,0,0])
+        errs_cw_t=np.zeros_like(Data[:,0,0])
+        errs_cw_p=np.zeros_like(Data[:,0,0])
+    else:
+        Cals=np.zeros_like(Data[:,0,0])
+        errs_cw_t=np.zeros_like(Data[:,0,0])
+        errs_cw_p=np.zeros_like(Data[:,0,0])
+        for c in Cals_ind:
+            Cals=(np.nansum([Cals,Data[:,0,c]],axis=0))
+            errs_cw_t=np.sqrt(np.nansum([errs_cw_t,errsw_t[:,0,c]**2.],axis=0))
+            errs_cw_p=np.sqrt(np.nansum([errs_cw_p,errsw_p[:,0,c]**2.],axis=0))
 
 
     errs_cw_t/=np.nanmean(Cals)
@@ -69,11 +74,19 @@ def LCgen_white(SAVEPATH,corr,Cals_ind,csn):
     errs_lcd_w_p=np.sqrt(np.nansum([(errs_w_p/LC)**2.,(errs_cs_p/CS)**2.],axis=0))*LCd
 
     for t in range(0,len(LC)):
-        if LC[t]<0.8:
+        if LC[t]<0.8 or LC[t]>1.2:
             LC[t]=np.nan
             CS[t]=np.nan
             LCd[t]=np.nan
-        
+    for t in range(0,len(LC)):
+        if t>1 and t<len(LC)-1:
+            if np.isfinite(LC[t])==False:
+                LC[t]=np.nanmedian(np.append(LC[t-1],LC[t+1]))
+            if np.isfinite(CS[t])==False:
+                CS[t]=np.nanmedian(np.append(CS[t-1],CS[t+1]))
+            if np.isfinite(LCd[t])==False:
+                LCd[t]=np.nanmedian(np.append(LCd[t-1],LCd[t+1]))
+                
     LC=LC/np.nanmean(LC[0:20])
     CS=CS/np.nanmean(CS[0:20])     
     LCd=LC/CS
@@ -92,20 +105,20 @@ def LCgen_white(SAVEPATH,corr,Cals_ind,csn):
 
     ax[0].plot(time0,LC,'.',color='grey')
     ax[0].errorbar(time0,LC,yerr=es*errs_w_t,ecolor='grey',elinewidth=0.5,alpha=0.5,zorder=9,fmt=None)
-    ax[0].set_ylim(ymin_lc-0.01,ymax_lc+0.01)
+    #ax[0].set_ylim(ymin_lc-0.01,ymax_lc+0.01)
     ax[0].set_title('WHITE')
     ax[0].set_xlabel('Time,[days]')
     ax[0].set_ylabel('Relative Flux [hrs]')
 
     ax[1].plot(time0,CS,'.',color='grey')
-    ax[1].set_ylim(ymin_cs-0.01,ymax_cs+0.01)
+    #ax[1].set_ylim(ymin_cs-0.01,ymax_cs+0.01)
     ax[1].set_title('Check Star - WHITE')
     ax[1].set_xlabel('Time,[days]')
     #ax[1].set_ylabel('Relative Flux')
 
     ax[2].plot(time0,LCd,'.',color='grey')
     ax[2].errorbar(time0,LCd,yerr=es*errs_lcd_w_t,ecolor='grey',elinewidth=0.5,alpha=0.5,zorder=9,fmt=None)
-    ax[2].set_ylim(ymin_lc-0.01,ymax_lc+0.01)
+    #ax[2].set_ylim(ymin_lc-0.01,ymax_lc+0.01)
     ax[2].set_title('Divided - WHITE')
     ax[2].set_xlabel('Time,[days]')
     #ax[1].set_ylabel('Relative Flux')
@@ -164,11 +177,13 @@ def LCgen_binns(SAVEPATH,width,corr,Cals_ind,csn):
     errs_cl_t=np.zeros_like(Datal[:,:,0])
     errs_cl_p=np.zeros_like(Datal[:,:,0])
     for b in range(0,Datal.shape[1]):
-    
-        for c in Cals_ind:
-            Cals_l[:,b]=(np.nansum([Cals_l[:,b],Datal[:,b,c]],axis=0))
-            errs_cl_t[:,b]=np.sqrt(np.nansum([errs_cl_t[:,b],errs_t[:,b,c]**2.],axis=0))
-            errs_cl_p[:,b]=np.sqrt(np.nansum([errs_cl_p[:,b],errs_p[:,b,c]**2.],axis=0))
+        if len(Cals_ind)==0:
+            Cals_l[:,b]=np.ones_like(Datal[:,0,0])
+        else:
+            for c in Cals_ind:
+                Cals_l[:,b]=(np.nansum([Cals_l[:,b],Datal[:,b,c]],axis=0))
+                errs_cl_t[:,b]=np.sqrt(np.nansum([errs_cl_t[:,b],errs_t[:,b,c]**2.],axis=0))
+                errs_cl_p[:,b]=np.sqrt(np.nansum([errs_cl_p[:,b],errs_p[:,b,c]**2.],axis=0))
 
         errs_cl_t/=np.nanmean(Cals_l[:,b])
         errs_cl_p/=np.nanmean(Cals_l[:,b])
@@ -222,20 +237,20 @@ def LCgen_binns(SAVEPATH,width,corr,Cals_ind,csn):
         fig,ax=plt.subplots(1,3,figsize=(10,4))
         ax[0].plot(time0,LC_l[:,b],'.',color=scal_m.to_rgba(bin_ctr[b]))
         ax[0].errorbar(time0,LC_l[:,b],yerr=es*errs_l_t[:,b],ecolor=scal_m.to_rgba(bin_ctr[b]),elinewidth=0.5,alpha=0.5,zorder=9,fmt=None)
-        ax[0].set_ylim(ymin_lc-0.01,ymax_lc+0.01)
+        #ax[0].set_ylim(ymin_lc-0.01,ymax_lc+0.01)
         ax[0].set_title(str(int(bin_ctr[b])))
         ax[0].set_xlabel('Time,[days]')
         ax[0].set_ylabel('Relative Flux')
     
         ax[1].plot(time0,CS_l[:,b],'.',color=scal_m.to_rgba(bin_ctr[b]))
-        ax[1].set_ylim(ymin_cs-0.01,ymax_cs+0.01)
+        #ax[1].set_ylim(ymin_cs-0.01,ymax_cs+0.01)
         ax[1].set_title('Check Star - ' +str(int(bin_ctr[b])))
         ax[1].set_xlabel('Time,[days]')
     #ax[1].set_ylabel('Relative Flux')
     
         ax[2].plot(time0,LC_d[:,b],'.',color=scal_m.to_rgba(bin_ctr[b]))
         ax[2].errorbar(time0,LC_d[:,b],yerr=es*errs_lcd_l_t[:,b],ecolor=scal_m.to_rgba(bin_ctr[b]),elinewidth=0.5,alpha=0.5,zorder=9,fmt=None)
-        ax[2].set_ylim(ymin_lc-0.01,ymax_lc+0.01)
+        #ax[2].set_ylim(ymin_lc-0.01,ymax_lc+0.01)
         ax[2].set_title('Divided - ' +str(int(bin_ctr[b])))
         ax[2].set_xlabel('Time,[days]')
         #ax[1].set_ylabel('Relative Flux')
