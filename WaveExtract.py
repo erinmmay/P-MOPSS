@@ -22,7 +22,7 @@ bot_chip=[1,2,3,4]
 from FullFrame import FullFrame
 
    
-def DetermineSide(path,ex,exx,SAVEPATH):
+def DetermineSide(nflats,path,ex,exx,SAVEPATH):
     print' -->> Loading Masks'
     masks=np.load(SAVEPATH+'FinalMasks.npz')['masks']
     print'          (done)'
@@ -49,7 +49,7 @@ def DetermineSide(path,ex,exx,SAVEPATH):
 
 
 #    print' -->> Loading HeaderData'
-    n_exp=np.load(SAVEPATH+'HeaderData.npz')['n_exp']
+#    n_exp=np.load(SAVEPATH+'HeaderData.npz')['n_exp']
 #    print'              ', n_exp
 #    print'          (done)'
     
@@ -60,7 +60,7 @@ def DetermineSide(path,ex,exx,SAVEPATH):
         #print y0, ywid, x0, xwid
         lowy=np.int(np.max([0,y0-ex]))
         topy=np.int(np.min([2*ypixels+ygap, y0+ywid+ex]))
-        data['obj'+str(int(i))]=np.empty([n_exp,np.int(topy-lowy),np.int(np.abs(masks[i,0]-masks[i,2]))+2*exx])
+        data['obj'+str(int(i))]=np.empty([nflats,np.int(topy-lowy),np.int(np.abs(masks[i,0]-masks[i,2]))+2*exx])
     #data=np.empty([n_obj,n_exp,2*ypixels+ygap,200])*0.0
     
     data_2c=np.empty([2*ypixels+ygap,xpixels])*0.0
@@ -108,7 +108,7 @@ def DetermineSide(path,ex,exx,SAVEPATH):
                         plt.clf()
                         plt.cla()
                         for y in range(0,topy-lowy):
-                            if y%50==0:
+                            if y%5==0:
                                 plt.plot(np.linspace(lowx,topx,topx-lowx),data['obj'+str(int(i))][0,y,:])
                         plt.title('obj'+str(int(i)))
                         plt.show(block=False)
@@ -123,23 +123,23 @@ def Extract_wave_left(path,ex,exx,SAVEPATH,obj,n_wave):
 
     n_obj=int(masks.shape[0])
     
-    print' -->> Loading Flats'
-    flat=np.load(SAVEPATH+'Flats.npz')['medfilt']
-    flat_full=FullFrame(1,flat,1)
-    flat_full/=np.nanmedian(flat_full)
-    print '             ', np.nanmedian(flat_full)                   #checking that flat has been normalized to 1
-    del flat
-    print'          (done)'
+#     print' -->> Loading Flats'
+#     flat=np.load(SAVEPATH+'Flats.npz')['medfilt']
+#     flat_full=FullFrame(1,flat,1)
+#     flat_full/=np.nanmedian(flat_full)
+#     print '             ', np.nanmedian(flat_full)                   #checking that flat has been normalized to 1
+#     del flat
+#     print'          (done)'
     
 
-    print' -->> Loading Darks'
-    dark=np.load(SAVEPATH+'Darks.npz')['medfilt']
-    dark_full=FullFrame(1,dark,1)/flat_full
-    dark_med=np.nanmedian(dark_full)
-    print '             ', dark_med                               #checking dark level
-    del dark
-    del dark_full
-    print'          (done)'
+#     print' -->> Loading Darks'
+#     dark=np.load(SAVEPATH+'Darks.npz')['medfilt']
+#     dark_full=FullFrame(1,dark,1)/flat_full
+#     dark_med=np.nanmedian(dark_full)
+#     print '             ', dark_med                               #checking dark level
+#     del dark
+#     del dark_full
+#     print'          (done)'
 
 
 #    print' -->> Loading HeaderData'
@@ -187,8 +187,8 @@ def Extract_wave_left(path,ex,exx,SAVEPATH,obj,n_wave):
             exp_cnt+=(1./8.)
             if exp_cnt%1==0:
                 print '  -->> EXPOSURE # ', np.int(exp_cnt)
-                image_full/=flat_full[0,:,:]
-                image_full-=dark_med
+#                 image_full/=flat_full[0,:,:]
+#                 image_full-=dark_med
                 #print '                     ', np.nanmedian(image_full)
                 x0=np.int(masks[obj,0])
                 y0=np.int(masks[obj,1])
@@ -202,11 +202,12 @@ def Extract_wave_left(path,ex,exx,SAVEPATH,obj,n_wave):
                 xcent=np.int(x0+xwid/2.)
                 for p in range(0,topy-lowy):
                     summ[np.int(exp_cnt)-1,p+lowy]=np.nansum(image_full[p+lowy,lowx+10:x0-10])
-                    #fig,ax=plt.subplots(1,2,figsize=(2.,4.))
-                    #ax[0].contourf((data['obj'+str(int(i))])[np.int(exp_cnt)-1,:,:],cmap=plt.cm.Greys_r)
-                    #ax[1].contourf((data['obj'+str(int(i))])[np.int(exp_cnt)-2,:,:],cmap=plt.cm.Greys_r)
-                    #plt.figtext(0.1,0.9,str(int(exp_cnt))+' '+str(int(i)),color='red')
-                    #plt.show(block=False)
+#                     fig,ax=plt.subplots(1,2,figsize=(2.,4.))
+#                     ax[0].contourf((data['obj'+str(int(i))])[np.int(exp_cnt)-1,:,:],cmap=plt.cm.Greys_r)
+#                     ax[1].contourf((data['obj'+str(int(i))])[np.int(exp_cnt)-2,:,:],cmap=plt.cm.Greys_r)
+#                     plt.figtext(0.1,0.9,str(int(exp_cnt))+' '+str(int(i)),color='red')
+#                     plt.show(block=False)
+#                     plt.close()
             #if exp_cnt%10==0:
             #    print '           ( EXTRACTED DATA FOR IMAGE ', np.int(exp_cnt), ')  --   ', n_exp, ' exposures total'
     for s in range(0,summ.shape[1]):
@@ -227,23 +228,23 @@ def Extract_wave_right(path,ex,exx,SAVEPATH,obj,n_wave):
 
     n_obj=int(masks.shape[0])
     
-    print' -->> Loading Flats'
-    flat=np.load(SAVEPATH+'Flats.npz')['medfilt']
-    flat_full=FullFrame(1,flat,1)
-    flat_full/=np.nanmedian(flat_full)
-    print '             ', np.nanmedian(flat_full)                   #checking that flat has been normalized to 1
-    del flat
-    print'          (done)'
+#     print' -->> Loading Flats'
+#     flat=np.load(SAVEPATH+'Flats.npz')['medfilt']
+#     flat_full=FullFrame(1,flat,1)
+#     flat_full/=np.nanmedian(flat_full)
+#     print '             ', np.nanmedian(flat_full)                   #checking that flat has been normalized to 1
+#     del flat
+#     print'          (done)'
     
 
-    print' -->> Loading Darks'
-    dark=np.load(SAVEPATH+'Darks.npz')['medfilt']
-    dark_full=FullFrame(1,dark,1)/flat_full
-    dark_med=np.nanmedian(dark_full)
-    print '             ', dark_med                               #checking dark level
-    del dark
-    del dark_full
-    print'          (done)'
+#     print' -->> Loading Darks'
+#     dark=np.load(SAVEPATH+'Darks.npz')['medfilt']
+#     dark_full=FullFrame(1,dark,1)/flat_full
+#     dark_med=np.nanmedian(dark_full)
+#     print '             ', dark_med                               #checking dark level
+#     del dark
+#     del dark_full
+#     print'          (done)'
 
 
 #   print' -->> Loading HeaderData'
@@ -291,8 +292,8 @@ def Extract_wave_right(path,ex,exx,SAVEPATH,obj,n_wave):
             exp_cnt+=(1./8.)
             if exp_cnt%1==0:
                 print '  -->> EXPOSURE # ', np.int(exp_cnt)
-                image_full/=flat_full[0,:,:]
-                image_full-=dark_med
+#                 image_full/=flat_full[0,:,:]
+#                 image_full-=dark_med
                 #print '                     ', np.nanmedian(image_full)
                 for i in range(0,n_obj):
                     x0=np.int(masks[obj,0])
@@ -306,11 +307,12 @@ def Extract_wave_right(path,ex,exx,SAVEPATH,obj,n_wave):
                     topx=np.int(np.min([4*xpixels+3*xgap,x0+xwid+exx]))
                     for p in range(0,topy-lowy):
                         summ[np.int(exp_cnt)-1,p+lowy]=np.nansum(image_full[p+lowy,x0+xwid+10:topx-10])
-                    #fig,ax=plt.subplots(1,2,figsize=(2.,4.))
-                    #ax[0].contourf((data['obj'+str(int(i))])[np.int(exp_cnt)-1,:,:],cmap=plt.cm.Greys_r)
-                    #ax[1].contourf((data['obj'+str(int(i))])[np.int(exp_cnt)-2,:,:],cmap=plt.cm.Greys_r)
-                    #plt.figtext(0.1,0.9,str(int(exp_cnt))+' '+str(int(i)),color='red')
-                    #plt.show(block=False)
+#                     fig,ax=plt.subplots(1,2,figsize=(2.,4.))
+#                     ax[0].contourf((data['obj'+str(int(i))])[np.int(exp_cnt)-1,:,:],cmap=plt.cm.Greys_r)
+#                     ax[1].contourf((data['obj'+str(int(i))])[np.int(exp_cnt)-2,:,:],cmap=plt.cm.Greys_r)
+#                     plt.figtext(0.1,0.9,str(int(exp_cnt))+' '+str(int(i)),color='red')
+#                     plt.show(block=False)
+#                     plt.close()
             #if exp_cnt%10==0:
             #    print '           ( EXTRACTED DATA FOR IMAGE ', np.int(exp_cnt), ')  --   ', n_exp, ' exposures total'
     for s in range(0,summ.shape[1]):
@@ -332,23 +334,23 @@ def Extract_wave_center(path,ex,exx,SAVEPATH,obj,n_wave):
 
     n_obj=int(masks.shape[0])
     
-    print' -->> Loading Flats'
-    flat=np.load(SAVEPATH+'Flats.npz')['medfilt']
-    flat_full=FullFrame(1,flat,1)
-    flat_full/=np.nanmedian(flat_full)
-    print '             ', np.nanmedian(flat_full)                   #checking that flat has been normalized to 1
-    del flat
-    print'          (done)'
+#     print' -->> Loading Flats'
+#     flat=np.load(SAVEPATH+'Flats.npz')['medfilt']
+#     flat_full=FullFrame(1,flat,1)
+#     flat_full/=np.nanmedian(flat_full)
+#     print '             ', np.nanmedian(flat_full)                   #checking that flat has been normalized to 1
+#     del flat
+#     print'          (done)'
     
 
-    print' -->> Loading Darks'
-    dark=np.load(SAVEPATH+'Darks.npz')['medfilt']
-    dark_full=FullFrame(1,dark,1)/flat_full
-    dark_med=np.nanmedian(dark_full)
-    print '             ', dark_med                               #checking dark level
-    del dark
-    del dark_full
-    print'          (done)'
+#     print' -->> Loading Darks'
+#     dark=np.load(SAVEPATH+'Darks.npz')['medfilt']
+#     dark_full=FullFrame(1,dark,1)/flat_full
+#     dark_med=np.nanmedian(dark_full)
+#     print '             ', dark_med                               #checking dark level
+#     del dark
+#     del dark_full
+#     print'          (done)'
 
 
 #   print' -->> Loading HeaderData'
@@ -396,8 +398,8 @@ def Extract_wave_center(path,ex,exx,SAVEPATH,obj,n_wave):
             exp_cnt+=(1./8.)
             if exp_cnt%1==0:
                 print '  -->> EXPOSURE # ', np.int(exp_cnt)
-                image_full/=flat_full[0,:,:]
-                image_full-=dark_med
+#                 image_full/=flat_full[0,:,:]
+#                 image_full-=dark_med
                 #print '                     ', np.nanmedian(image_full)
                 for i in range(0,n_obj):
                     x0=np.int(masks[obj,0])
@@ -425,7 +427,7 @@ def Extract_wave_center(path,ex,exx,SAVEPATH,obj,n_wave):
                 summ[t,s]=np.nan
     summ=np.nanmedian(summ,axis=0)
     
-    #plt.plot(summ)
-    #plt.show(block=False)
+    plt.plot(summ)
+    plt.show(block=False)
     #np.savez(SAVEPATH+'wavespec_obj'+str(int(obj))+'.npz', spec=np.flip(summ,0))
     return summ
