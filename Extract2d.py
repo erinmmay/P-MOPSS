@@ -24,49 +24,50 @@ bot_gain=[0.85,0.85,0.84,0.83]
 
 from FullFrame import FullFrame
 
-def Extract2D(path,ex,SAVEPATH,binn,Lflat):
+def Extract2D(path,ex,SAVEPATH,binn,Lflat,Ldark):
     print' -->> Loading Masks'
     masks=np.load(SAVEPATH+'FinalMasks.npz')['masks']
     print'          (done)'
 
     n_obj=int(masks.shape[0])
     
-    print' -->> Loading Flats'
-    if binn!=1:
-        flat=np.load(SAVEPATH+'binned_flat.npz')['flat']
-    else:
-        flat=(np.load(SAVEPATH+'Flats.npz')['medfilt'])
-        flat_full=FullFrame(1,flat,1)[0,:,:]
-        flat_full/=np.nanmedian(flat_full)
-        print '             ', np.nanmedian(flat_full)                   #checking that flat has been normalized to 1
-    
-        #print '               (finding bad pixels in flat...)'
-        #for i in range(0,flat_full.shape[0]):
-        #    for j in range(0,flat_full.shape[1]):
-        #        if flat_full[i,j]>1.4 or flat_full[i,j]<0.6:
-#            ran=2
-#            mini=np.max([0,i-ran])
-#            maxi=np.min([i+ran,flat_full.shape[0]])
-#            minj=np.max([0,j-ran])
-#            maxj=np.min([j+ran,flat_full.shape[1]])
-#            flat_full[0,i,j]=np.nanmedian(flat_full[0,mini:maxi,minj:maxj])
-         #           flat_full[i,j]=np.nan
-    
-        del flat
-    print'          (done)'
-    
-
-    print' -->> Loading Darks'
-    dark=np.load(SAVEPATH+'Darks.npz')['medfilt']
     if Lflat==True:
-        dark_full=FullFrame(1,dark,binn)[0,:,:]/flat_full
-    else:
-        dark_full=FullFrame(1,dark,binn)
-    dark_med=np.nanmedian(dark_full)
-    print '             ', dark_med                               #checking dark level
-    del dark
-    del dark_full
-    print'          (done)'
+        print' -->> Loading Flats'
+        if binn!=1:
+            flat=np.load(SAVEPATH+'binned_flat.npz')['flat']
+        else:
+            flat=(np.load(SAVEPATH+'Flats.npz')['medfilt'])
+            flat_full=FullFrame(1,flat,1)[0,:,:]
+            flat_full/=np.nanmedian(flat_full)
+            print '             ', np.nanmedian(flat_full)                   #checking that flat has been normalized to 1
+
+            #print '               (finding bad pixels in flat...)'
+            #for i in range(0,flat_full.shape[0]):
+            #    for j in range(0,flat_full.shape[1]):
+            #        if flat_full[i,j]>1.4 or flat_full[i,j]<0.6:
+    #            ran=2
+    #            mini=np.max([0,i-ran])
+    #            maxi=np.min([i+ran,flat_full.shape[0]])
+    #            minj=np.max([0,j-ran])
+    #            maxj=np.min([j+ran,flat_full.shape[1]])
+    #            flat_full[0,i,j]=np.nanmedian(flat_full[0,mini:maxi,minj:maxj])
+             #           flat_full[i,j]=np.nan
+
+            del flat
+        print'          (done)'
+    
+    if Ldark==True:
+        print' -->> Loading Darks'
+        dark=np.load(SAVEPATH+'Darks.npz')['medfilt']
+        if Lflat==True:
+            dark_full=FullFrame(1,dark,binn)[0,:,:]/flat_full
+        else:
+            dark_full=FullFrame(1,dark,binn)
+        dark_med=np.nanmedian(dark_full)
+        print '             ', dark_med                               #checking dark level
+        del dark
+        del dark_full
+        print'          (done)'
 
 
     print' -->> Loading HeaderData'
@@ -117,7 +118,8 @@ def Extract2D(path,ex,SAVEPATH,binn,Lflat):
                 #print '  -->> EXPOSURE # ', np.int(exp_cnt), np.nanmedian(image_full)
                 if Lflat==True:
                     image_full/=flat_full[:,:]
-                image_full-=dark_med
+                if Ldark==True:
+                    image_full-=dark_med
                 #print '                     ', np.nanmedian(image_full)
                 for i in range(0,n_obj):
                     x0=np.int(masks[i,0])
