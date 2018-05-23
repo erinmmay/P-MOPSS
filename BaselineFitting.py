@@ -182,7 +182,7 @@ def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,noise
         ax[0].set_title('WHITE')
         ax[0].set_xlabel('Time,[hrs]')
         ax[0].set_ylabel('Relative Flux [hrs]')
-        ax[0].set_ylim(ybot,ytop)
+        #ax[0].set_ylim(ybot,ytop)
         
         ### rmse estimate for LC fits ###
         ta=(np.append(time0[np.where(time0<timein)],time0[np.where(time0>timeeg)]))
@@ -236,7 +236,7 @@ def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,noise
         ax[0].set_title('WHITE')
         ax[0].set_xlabel('Time,[hrs]')
         ax[0].set_ylabel('Relative Flux [hrs]')
-        ax[0].set_ylim(ybot,ytop)
+        #ax[0].set_ylim(ybot,ytop)
         
         ### rmse estimate for LC fits ###
         ta=(np.append(time0[np.where(time0<timein)],time0[np.where(time0>timeeg)]))
@@ -291,6 +291,7 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
     z=avg
 
     time0=np.load(SAVEPATH+'Obs_times.npz')['times']
+    n_exp=len(time0)
 
     if corr==True:
         LC_l=np.load(SAVEPATH+'LC_bins_'+str(int(width))+'_Corr.npz')['data']
@@ -309,49 +310,51 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
     bin_arr=np.append(bin_arr,[bin_arr[-1]+width,bin_arr[-1]+2*width])
     print bin_arr
     
-#    if noise_white==True:
-    if spot==True:
-        lc_fitw=np.load(SAVEPATH+'Fits_'+str(int(width))
-                            +'/LightCurve_fits_spot.npz')['lightcurve_fit']
-        white_residuals=np.load(SAVEPATH+'Fits_'+str(int(width))
-                            +'/LightCurve_fits_spot.npz')['residuals']*10**-6
-    else:
-        lc_fitw=np.load(SAVEPATH+'Fits_'+str(int(width))
-                            +'/LightCurve_fits_white.npz')['lightcurve_fit']
-        white_residuals=np.load(SAVEPATH+'Fits_'+str(int(width))
-                            +'/LightCurve_fits_white.npz')['residuals']*10**-6
-    lc_dataw_corr=lc_fitw-white_residuals
-    if corr==True:
-        lc_dataw=np.load(SAVEPATH+'LCwhite_Corr.npz')['data']
-    else:
-        lc_dataw=np.load(SAVEPATH+'LCwhite.npz')['data']
-    common_white=lc_dataw/lc_fitw
-    #######################
-    print '------------------- Common Mode Noise -------------------'
-    fig,ax=plt.subplots(1,3,figsize=(15,4))
-    ax[0].plot(time0,lc_dataw,'.',markersize=9,color='slateblue',alpha=0.7)
-    ax[0].set_title('Raw White Curve',fontsize=15)
-    ax[0].set_xlabel('Time')
-    ax[0].set_ylabel('Relative Flux')
-    ax[0].set_ylim(ybot,ytop)
-
-    ax[1].plot(time0,lc_dataw_corr,'.',markersize=9,color='slateblue',alpha=0.7)
-    ax[1].plot(time0,lc_fitw,linewidth=1.0,color='grey')
-    ax[1].set_title('Corrected White Curve',fontsize=15)
-    ax[1].set_xlabel('Time')
-    ax[1].set_ylabel('Relative Flux')
-    ax[1].set_ylim(ybot,ytop)
-
-    ax[2].plot(time0,common_white,markersize=9,color='slateblue',alpha=0.7)
-    ax[2].set_title('COMMON MODE WHITE NOISE',fontsize=15)
-    ax[2].set_xlabel('Time')
-    ax[2].set_ylim(ybot,ytop)
-
-    plt.show()
-    print ' --------------------------------------------------------- '
+    if noise_white==True:
+        if spot==True:
+            lc_fitw=np.load(SAVEPATH+'Fits_'+str(int(width))
+                                +'/LightCurve_fits_spot.npz')['lightcurve_fit']
+            white_residuals=np.load(SAVEPATH+'Fits_'+str(int(width))
+                                +'/LightCurve_fits_spot.npz')['residuals']*10**-6
+        else:
+            lc_fitw=np.load(SAVEPATH+'Fits_'+str(int(width))
+                                +'/LightCurve_fits_white.npz')['lightcurve_fit']
+            white_residuals=np.load(SAVEPATH+'Fits_'+str(int(width))
+                                +'/LightCurve_fits_white.npz')['residuals']*10**-6
+        lc_dataw_corr=lc_fitw-white_residuals
+        if corr==True:
+            lc_dataw=np.load(SAVEPATH+'LCwhite_Corr.npz')['data']
+        else:
+            lc_dataw=np.load(SAVEPATH+'LCwhite.npz')['data']
+        common_white=lc_dataw/lc_fitw
         #######################
-    for b in range(0,LC_l.shape[1]):
-        LC_l[:,b]/=common_white
+        print '------------------- Common Mode Noise -------------------'
+        fig,ax=plt.subplots(1,3,figsize=(15,4))
+        ax[0].plot(time0,lc_dataw,'.',markersize=9,color='slateblue',alpha=0.7)
+        ax[0].set_title('Raw White Curve',fontsize=15)
+        ax[0].set_xlabel('Time')
+        ax[0].set_ylabel('Relative Flux')
+        ax[0].set_ylim(ybot,ytop)
+
+        ax[1].plot(time0,lc_dataw_corr,'.',markersize=9,color='slateblue',alpha=0.7)
+        ax[1].plot(time0,lc_fitw,linewidth=1.0,color='grey')
+        ax[1].set_title('Corrected White Curve',fontsize=15)
+        ax[1].set_xlabel('Time')
+        ax[1].set_ylabel('Relative Flux')
+        ax[1].set_ylim(ybot,ytop)
+
+        ax[2].plot(time0,common_white,markersize=9,color='slateblue',alpha=0.7)
+        ax[2].set_title('COMMON MODE WHITE NOISE',fontsize=15)
+        ax[2].set_xlabel('Time')
+        ax[2].set_ylim(ybot,ytop)
+
+        plt.show()
+        print ' --------------------------------------------------------- '
+        #######################
+        for b in range(0,LC_l.shape[1]):
+            LC_l[:,b]/=common_white
+    else:
+        common_white=np.zeros_like(LC_l[:,0])
             
     
     
@@ -380,7 +383,7 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
     print LC_l.shape
     for b in range(0,LC_l.shape[1]):
         print b
-        if np.isnan(LC_l[0,b])==True or np.isnan(LC_l[1,b])==True or np.isnan(LC_l[2,b])==True:
+        if np.isnan(LC_l[int(n_exp/2),b])==True:# or np.isnan(LC_l[1,b])==True or np.isnan(LC_l[2,b])==True:
             print '---------', bin_ctr[b],'---------'
             continue
         for f in range(0,LC_l.shape[0]):

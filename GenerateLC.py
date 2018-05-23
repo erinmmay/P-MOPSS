@@ -101,14 +101,14 @@ def LCgen_white(SAVEPATH,corr,Cals_ind,csn):
     ymin_cs=np.nanmin(CS)
 
 
-    fig,ax=plt.subplots(1,3,figsize=(10,4))
+    fig,ax=plt.subplots(1,3,figsize=(15,4))
 
     ax[0].plot(time0,LC,'.',color='grey')
     ax[0].errorbar(time0,LC,yerr=es*errs_w_t,ecolor='grey',elinewidth=0.5,alpha=0.5,zorder=9,fmt=None)
     #ax[0].set_ylim(ymin_lc-0.01,ymax_lc+0.01)
     ax[0].set_title('WHITE')
     ax[0].set_xlabel('Time,[days]')
-    ax[0].set_ylabel('Relative Flux [hrs]')
+    ax[0].set_ylabel('Relative Flux')
 
     ax[1].plot(time0,CS,'.',color='grey')
     #ax[1].set_ylim(ymin_cs-0.01,ymax_cs+0.01)
@@ -234,25 +234,25 @@ def LCgen_binns(SAVEPATH,width,corr,Cals_ind,csn):
         ymax_cs=np.nanmax(CS_l[:,b])
         ymin_cs=np.nanmin(CS_l[:,b])
 
-        fig,ax=plt.subplots(1,3,figsize=(10,4))
-        ax[0].plot(time0,LC_l[:,b],'.',color=scal_m.to_rgba(bin_ctr[b]))
-        ax[0].errorbar(time0,LC_l[:,b],yerr=es*errs_l_t[:,b],ecolor=scal_m.to_rgba(bin_ctr[b]),elinewidth=0.5,alpha=0.5,zorder=9,fmt=None)
+        fig,ax=plt.subplots(1,3,figsize=(15,4))
+        ax[0].plot(time0*24.,LC_l[:,b],'.',color=scal_m.to_rgba(bin_ctr[b]))
+        ax[0].errorbar(time0*24.,LC_l[:,b],yerr=es*errs_l_t[:,b],ecolor=scal_m.to_rgba(bin_ctr[b]),elinewidth=0.5,alpha=0.5,zorder=9,fmt=None)
         #ax[0].set_ylim(ymin_lc-0.01,ymax_lc+0.01)
         ax[0].set_title(str(int(bin_ctr[b])))
-        ax[0].set_xlabel('Time,[days]')
+        ax[0].set_xlabel('Time,[hrs]')
         ax[0].set_ylabel('Relative Flux')
     
-        ax[1].plot(time0,CS_l[:,b],'.',color=scal_m.to_rgba(bin_ctr[b]))
+        ax[1].plot(time0*24.,CS_l[:,b],'.',color=scal_m.to_rgba(bin_ctr[b]))
         #ax[1].set_ylim(ymin_cs-0.01,ymax_cs+0.01)
         ax[1].set_title('Check Star - ' +str(int(bin_ctr[b])))
-        ax[1].set_xlabel('Time,[days]')
+        ax[1].set_xlabel('Time,[hrs]')
     #ax[1].set_ylabel('Relative Flux')
     
-        ax[2].plot(time0,LC_d[:,b],'.',color=scal_m.to_rgba(bin_ctr[b]))
-        ax[2].errorbar(time0,LC_d[:,b],yerr=es*errs_lcd_l_t[:,b],ecolor=scal_m.to_rgba(bin_ctr[b]),elinewidth=0.5,alpha=0.5,zorder=9,fmt=None)
+        ax[2].plot(time0*24.,LC_d[:,b],'.',color=scal_m.to_rgba(bin_ctr[b]))
+        ax[2].errorbar(time0*24.,LC_d[:,b],yerr=es*errs_lcd_l_t[:,b],ecolor=scal_m.to_rgba(bin_ctr[b]),elinewidth=0.5,alpha=0.5,zorder=9,fmt=None)
         #ax[2].set_ylim(ymin_lc-0.01,ymax_lc+0.01)
         ax[2].set_title('Divided - ' +str(int(bin_ctr[b])))
-        ax[2].set_xlabel('Time,[days]')
+        ax[2].set_xlabel('Time,[hrs]')
         #ax[1].set_ylabel('Relative Flux')
     
         plt.show()
