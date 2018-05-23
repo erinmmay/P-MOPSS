@@ -17,7 +17,7 @@ from setup import *
 def func_gaus(x,sigma):
     return 1.0-np.exp(-(1./2.)*(x/(sigma))**2.)
 
-def AlignSpec(osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn,corr,ver,time_trim,skip):
+def AlignSpec(gris,osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn,corr,ver,time_trim,skip):
     masks=np.load(SAVEPATH+'FinalMasks.npz')['masks']
     if corr==True:
         input_data=np.load(SAVEPATH+'FlattenedSpectra_Corr.npz')['flat_spec']
@@ -30,9 +30,39 @@ def AlignSpec(osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn
     cnv_data=np.empty([n_obj,n_exp,n_pix])*np.nan
     ovs_data=np.empty([n_obj,n_exp,int(osr*n_pix)])*np.nan
     int_data=np.empty([n_obj,n_exp,n_pix])*np.nan
-    
+
     pix_ar=np.linspace(n_pix-1,0,n_pix)
     pix_ar_os=np.linspace(n_pix-1,0,int(osr*n_pix))
+    print pix_ar
+    print (n_pix-ygap)/2, n_pix
+    print ypixels, 2*ypixels+ygap
+    print 
+    if binn>1:
+        for p in range(0,len(pix_ar)):
+            if pix_ar[p]<=ypixels/float(binn):
+                pix_ar[p]=pix_ar[p]*float(binn)
+            else:
+                pix_ar[p]= (pix_ar[p]-ygap-ypixels/float(binn))*float(binn)+ypixels+ygap
+        for p in range(0,len(pix_ar_os)):
+            if pix_ar_os[p]<=ypixels/float(binn):
+                pix_ar_os[p]=pix_ar_os[p]*float(binn)
+            else:
+                pix_ar_os[p]= (pix_ar_os[p]-ygap-ypixels/float(binn))*float(binn)+ypixels+ygap
+        plt.figure(201,figsize=(8,6))
+        plt.plot(pix_ar,'.',color='black')
+        plt.axhline(y=ypixels)
+        plt.axhline(y=ypixels+ygap)
+        plt.axvline(x=ypixels/binn)
+        plt.axvline(x=ypixels/binn+ygap)
+        plt.show(block=False)
+        plt.figure(202,figsize=(8,6))
+        plt.plot(pix_ar_os,'.',color='blue')
+        plt.axhline(y=ypixels)
+        plt.axhline(y=ypixels+ygap)
+        plt.axvline(x=osr*(ypixels/binn))
+        plt.axvline(x=osr*(ypixels/binn+ygap))
+        plt.show(block=False)
+    print pix_ar      
     
     shift_pixels=np.empty([n_obj,n_exp,n_pix])*np.nan
     
@@ -67,7 +97,7 @@ def AlignSpec(osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn
         plt.figure(101,figsize=(12,5))
         for t in range(0,n_exp):
             if t%10==0:
-                plt.plot(np.linspace(0,2*ypixels+ygap,2*ypixels+ygap),input_data[o,t,:])
+                plt.plot(pix_ar,input_data[o,t,:])
         plt.figtext(0.2,0.8,'OBJECT '+str(int(o)),fontsize=15,color='red')
         plt.xlabel('Stitched Pixels')
         plt.ylabel('ADUs')
@@ -95,7 +125,7 @@ def AlignSpec(osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn
         plt.figure(102,figsize=(12,5))
         for t in range(0,n_exp):
             if t%10==0:
-                plt.plot(np.linspace(0,2*ypixels+ygap-1,2*ypixels+ygap),input_data[o,t,:])
+                plt.plot(pix_ar,input_data[o,t,:])
         plt.figtext(0.2,0.8,'OBJECT '+str(int(o)),fontsize=15,color='red')
         plt.xlabel('Stitched Pixels')
         plt.ylabel('ADUs')
@@ -130,7 +160,7 @@ def AlignSpec(osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn
         plt.figure(103,figsize=(12,5))
         for t in range(0,n_exp):
             if t%10==0:
-                plt.plot(np.linspace(0,2*ypixels+ygap-1,2*ypixels+ygap),cnv_data[o,t,:])
+                plt.plot(pix_ar,cnv_data[o,t,:])
         plt.figtext(0.2,0.8,'OBJECT '+str(int(o)),fontsize=15,color='red')
         plt.xlabel('Stitched Pixels')
         plt.ylabel('ADUs')
@@ -145,23 +175,76 @@ def AlignSpec(osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn
        
         print ' --Cross Correlating in Time...'
         
+#         ovs_data=np.flip(ovs_data,axis=2)
+#         cnv_data=np.flip(cnv_data,axis=2)
+#         input_data=np.flip(input_data,axis=2)
+        
         # first, apply wavelength solution to first point in time to identify pixel locations of major atmospheric lines
         filew=wavelength_path+'Cal_'+str(int(o))+'_out.txt'
        
-          
-        coeff=np.genfromtxt(filew,skip_header=4,skip_footer=25,usecols=[1])
-        new_pix=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[1])
-        cor_wav=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[2])
+        if gris==150:
+            coeff=np.genfromtxt(filew,skip_header=4,skip_footer=14,usecols=[1])
+            new_pix=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[1])
+            cor_wav=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[2])
+        else:
+            coeff=np.genfromtxt(filew,skip_header=4,skip_footer=25,usecols=[1])
+            new_pix=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[1])
+            cor_wav=np.genfromtxt(filew,skip_header=4+coeff.size+3,usecols=[2])
+        
+#         print coeff
+#         print new_pix
+#         print cor_wav
             
         order=len(coeff)-1
-            
+        
+#        new_pix=2*ypixels+ygap-new_pix
+        
+#         print new_pix
+#         print cor_wav
+        
+#         if binn>1:
+#             print ypixels
+#             for n in range(0,len(new_pix)):
+#                 if new_pix[n]<ypixels:
+#                     new_pix[n]=new_pix[n]/float(binn)
+#                 if new_pix[n]>ypixels+ygap:
+#                     new_pix[n]=((new_pix[n]-ypixels+ygap)/float(binn))+ypixels/float(binn)+ygap
+#                 if new_pix[n]>ypixels and new_pix[n]<ypixels+ygap:
+#                     new_pix[n]=np.nan      
+#         new_pix_n=new_pix[~np.isnan(new_pix)]
+#         cor_wav_n=cor_wav[~np.isnan(new_pix)]
+        
+#         print new_pix
+#         print cor_wav
+        
+#         plt.figure(200)
+#         plt.plot(2*ypixels/binn+ygap-new_pix,cor_wav)
+#         plt.show(block=False)
+        
         ALL_PIXELS=np.empty([n_obj,len(new_pix)])
             
         ALL_PIXELS[o,:]=new_pix#-(y0_fflip-y0_o)
         wav_func=np.poly1d(np.polyfit(ALL_PIXELS[o,:],cor_wav,order))
             #wav_ar[o,:,:]=wav_func(shift_pixels[o,:,:])
-        
+#         if binn>1:
+#             pix_ar_os_d=np.zeros_like(pix_ar_os)
+#             for p in range(0,len(pix_ar_os)):
+#                 if pix_ar_os[p]<ypixels/binn:
+#                     pix_ar_os_d[p]=2.0*pix_ar_os[p]
+#                 if pix_ar_os[p]>ypixels/binn+ygap:
+#                     pix_ar_os_d[p]=2.0*(pix_ar_os[p]-ygap)+ygap
+#                 if pix_ar_os[p] >= ypixels/binn and pix_ar_os[p] <= ypixels/binn+ygap:
+#                     pix_ar_os_d[p]=pix_ar_os[p]+ypixels
+
+#         print pix_ar_os
+#         print pix_ar_os_d
         wave_first=wav_func(pix_ar_os)
+#         print wave_first.shape
+        
+#         wave_first=np.flip(wave_first,axis=0)
+#         ovs_data=np.flip(ovs_data,axis=2)
+#         cnv_data=np.flip(cnv_data,axis=2)
+#         input_data=np.flip(input_data,axis=2)
             
         #identifying line locations in first exposure
         o2_7594_ind_upp=np.where(np.abs(wave_first-(7594-30))==np.nanmin(np.abs(wave_first-(7594-30))))[0][0]
@@ -354,6 +437,7 @@ def AlignSpec(osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn
         #y0_o=yflp-topy
     
         wav_ar[o,:,:]=wav_func(shift_pixels[o,:,:])
+        
         
         #interperolated data
         #for t in range(0,n_exp):

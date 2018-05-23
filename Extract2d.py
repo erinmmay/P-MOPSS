@@ -24,7 +24,7 @@ bot_gain=[0.85,0.85,0.84,0.83]
 
 from FullFrame import FullFrame
 
-def Extract2D(path,ex,SAVEPATH,binn,Lflat,Ldark):
+def Extract2D(path,ex,SAVEPATH,binnx,binny,fb,Lflat,Ldark):
     print' -->> Loading Masks'
     masks=np.load(SAVEPATH+'FinalMasks.npz')['masks']
     print'          (done)'
@@ -79,16 +79,27 @@ def Extract2D(path,ex,SAVEPATH,binn,Lflat,Ldark):
     for i in range(0,masks.shape[0]):
         y0=np.int(masks[i,1])
         ywid=(np.int(masks[i,3]-masks[i,1]))
+        ### BINN THE SIZES OF THE MASKS in Y ###
+        if fb==1:
+            if y0<ypixels:
+                y0=y0/binny
+            if y0>ypixels:
+                y0=(y0-ypixels-ygap)/binny+ypixels/binny+ygap
+            if ywid<ypixels:
+                ywid=ywid/binny
+            if ywid>ypixels:
+                ywid=(ywid-ygap)/binny+ygap
         #print y0, ywid, x0, xwid
         lowy=np.int(np.max([0,y0-ex]))
-        topy=np.int(np.min([2*ypixels/binn+ygap, y0+ywid+ex]))
-        data['obj'+str(int(i))]=np.empty([n_exp,np.int(topy-lowy),np.int(np.abs(masks[i,0]-masks[i,2]))])
+        topy=np.int(np.min([2*ypixels/binny+ygap, y0+ywid+ex]))
+           
+        data['obj'+str(int(i))]=np.empty([n_exp,np.int(topy-lowy),fb*(np.int(np.abs(masks[i,0]-masks[i,2])))/binnx])
     #data=np.empty([n_obj,n_exp,2*ypixels+ygap,200])*0.0
     
-    data_2c=np.empty([2*ypixels/binn+ygap,xpixels/binn])*0.0
+    data_2c=np.empty([2*ypixels/binny+ygap,xpixels/binnx])*0.0
     exp_cnt=0
 
-    image_full=np.empty([2*ypixels/binn+ygap,4*xpixels/binn+3*xgap])*0.0
+    image_full=np.empty([2*ypixels/binny+ygap,4*xpixels/binnx+3*xgap])*0.0
     for file in os.listdir(path):
         if file.endswith('.fits.gz'):
             split=file.split('c')
@@ -98,21 +109,23 @@ def Extract2D(path,ex,SAVEPATH,binn,Lflat,Ldark):
             if chip in top_chip:
                 c=top_chip.index(chip)
                 #    print '  -->>', root, chip, bot_chip[c]
-                data_t=np.fliplr((fits.open(path+root+'c'+str(int(chip))+'.fits.gz')[0].data)[0:ypixels/binn,0:xpixels/binn])/top_gain[c]
-                data_b=np.flipud((fits.open(path+root+'c'+str(int(bot_chip[c]))+'.fits.gz')[0].data)[0:ypixels/binn,0:xpixels/binn])/bot_gain[c]
+                data_t=np.fliplr((fits.open(path+root+'c'+str(int(chip))+'.fits.gz')[0].data)
+                                 [0:ypixels/binny,0:xpixels/binnx])/top_gain[c]
+                data_b=np.flipud((fits.open(path+root+'c'+str(int(bot_chip[c]))+'.fits.gz')[0].data)
+                                 [0:ypixels/binny,0:xpixels/binnx])/bot_gain[c]
                 #print root, c, np.nanmedian(data_t), np.nanmedian(data_b)
-                data_2c[0:ypixels/binn,:]=data_t
-                data_2c[ypixels/binn+ygap:,:]=data_b
+                data_2c[0:ypixels/binny,:]=data_t
+                data_2c[ypixels/binny+ygap:,:]=data_b
                 del data_t
                 del data_b
                 if c==0:
-                    image_full[:,0:xpixels/binn]=data_2c
+                    image_full[:,0:xpixels/binnx]=data_2c
                 if c==1:
-                    image_full[:,xpixels/binn+xgap:2*xpixels/binn+xgap]=data_2c
+                    image_full[:,xpixels/binnx+xgap:2*xpixels/binnx+xgap]=data_2c
                 if c==2:
-                    image_full[:,2*xpixels/binn+2*xgap:3*xpixels/binn+2*xgap]=data_2c
+                    image_full[:,2*xpixels/binnx+2*xgap:3*xpixels/binnx+2*xgap]=data_2c
                 if c==3:
-                    image_full[:,3*xpixels/binn+3*xgap:]=data_2c
+                    image_full[:,3*xpixels/binnx+3*xgap:]=data_2c
             exp_cnt+=(1./8.)
             if exp_cnt%1==0:
                 #print '  -->> EXPOSURE # ', np.int(exp_cnt), np.nanmedian(image_full)
@@ -126,11 +139,32 @@ def Extract2D(path,ex,SAVEPATH,binn,Lflat,Ldark):
                     y0=np.int(masks[i,1])
                     xwid=(np.int(masks[i,2]-masks[i,0]))
                     ywid=(np.int(masks[i,3]-masks[i,1]))
+                    ### BINN THE SIZES OF THE MASKS in Y ###
+                    if fb==1:
+                        if y0<=ypixels:
+                            y0=y0/binny
+                        if y0>ypixels:
+                            y0=(y0-ypixels-ygap)/binny+ypixels/binny+ygap
+                        if ywid<=ypixels:
+                            ywid=ywid/binny
+                        if ywid>ypixels:
+                            ywid=(ywid-ygap)/binny+ygap
+                        ########
+                        if x0<=xpixels:
+                            x0=x0/binnx
+                        if x0>xpixels and x0<=2*xpixels+xgap:
+                            x0=(x0-xpixels-xgap)/binnx+xpixels/binnx+xgap
+                        if x0>2*xpixels+xgap and x0<=3*xpixels+2*xgap:
+                            x0=(x0-2*xpixels-2*xgap)/binnx+2*xpixels/binnx+2*xgap
+                        if x0>3*xpixels+2*xgap and x0<=4*xpixels+3*xgap:
+                            x0=(x0-3*xpixels-3*xgap)/binnx+3*xpixels/binnx+3*xgap
+                        if xwid<xpixels:
+                            xwid=xwid/binnx
                     #print y0, ywid, x0, xwid
                     lowy=np.int(np.max([0,y0-ex]))
-                    topy=np.int(np.min([2*ypixels/binn+ygap, y0+ywid+ex]))
+                    topy=np.int(np.min([2*ypixels/binny+ygap, y0+ywid+ex]))
                     lowx=np.int(np.max([0,x0]))
-                    topx=np.int(np.min([4*xpixels/binn+3*xgap,x0+xwid]))
+                    topx=np.int(np.min([4*xpixels/binnx+3*xgap,x0+xwid]))
                     (data['obj'+str(int(i))])[np.int(exp_cnt)-1,:,:]=image_full[lowy:topy,lowx:topx]
                     #fig,ax=plt.subplots(1,2,figsize=(2.,4.))
                     #ax[0].contourf((data['obj'+str(int(i))])[np.int(exp_cnt)-1,:,:],cmap=plt.cm.Greys_r)

@@ -15,16 +15,16 @@ from matplotlib.transforms import Bbox
 top_chip=[6,5,8,7]
 bot_chip=[1,2,3,4]
 
-width=200.
 
 
 
 
-def FindMasks(flat_path,root_flat,flat_thres,SAVEPATH,binn):
-    masks=np.empty([4,2*ypixels/binn+ygap,xpixels/binn])*0.0
+def FindMasks(flat_path,root_flat,flat_thres,SAVEPATH,binnx,binny):
+    width=200./binnx
+    masks=np.empty([4,2*ypixels/binny+ygap,xpixels/binnx])*0.0
 
-    y_arr=np.linspace(0,2*ypixels/binn+ygap,2*ypixels/binn+ygap)
-    x_arr=np.linspace(0,xpixels/binn,xpixels/binn)
+    y_arr=np.linspace(0,2*ypixels/binny+ygap,2*ypixels/binny+ygap)
+    x_arr=np.linspace(0,xpixels/binnx,xpixels/binnx)
     X,Y=np.meshgrid(x_arr,y_arr)
     
     BOXES=np.array([])
@@ -40,12 +40,12 @@ def FindMasks(flat_path,root_flat,flat_thres,SAVEPATH,binn):
         print ' Working on chips', top_chip[c], '&', bot_chip[c]
         print '------------------------------'
         data_t=np.fliplr(((fits.open(flat_path+root_flat+str(int(top_chip[c]))+'.fits.gz'))[0].data)
-                         [0:ypixels/binn,0:xpixels/binn])
+                         [0:ypixels/binny,0:xpixels/binnx])
         data_b=np.flipud(((fits.open(flat_path+root_flat+str(int(bot_chip[c]))+'.fits.gz'))[0].data)
-                         [0:ypixels/binn,0:xpixels/binn])
-        data=np.empty([2*ypixels/binn+ygap,xpixels/binn])*np.nan
-        data[0:ypixels/binn,:]=data_t
-        data[ypixels/binn+ygap:,:]=data_b
+                         [0:ypixels/binny,0:xpixels/binnx])
+        data=np.empty([2*ypixels/binny+ygap,xpixels/binnx])*np.nan
+        data[0:ypixels/binny,:]=data_t
+        data[ypixels/binny+ygap:,:]=data_b
         print '   -->>  DATA STITCHED'
 
         fig,ax=plt.subplots(1,2,figsize=(6.,6.))
@@ -59,7 +59,7 @@ def FindMasks(flat_path,root_flat,flat_thres,SAVEPATH,binn):
         for i in range(0,len(paths)):
             p0=(paths[i])
             bbox=p0.get_extents()
-            if np.abs((bbox.get_points()[0,0])-(bbox.get_points()[1,0]))> 190./binn:
+            if np.abs((bbox.get_points()[0,0])-(bbox.get_points()[1,0]))> 190./binnx:
                 middle_of_box=(bbox.get_points()[0,0]+bbox.get_points()[1,0])/2.
                 #print 'BOX #',i
                 #print '   ----> MIDDLE OF BOX:', middle_of_box
@@ -70,31 +70,31 @@ def FindMasks(flat_path,root_flat,flat_thres,SAVEPATH,binn):
                 #ax.add_patch(patches.PathPatch(p0, facecolor='none', ec='yellow', linewidth=2, zorder=50))
                 #plt.show(block=False)
                 #bbox.get_points[0,0]=MIN_x, [0,1]=MIN_y, [1,0]=MAX_x, [1,1]=MAX_y
-                x0,y0,x1,y1=middle_of_box-width/(2.*binn),bbox.get_points()[0,1],middle_of_box+width/(2.*binn),bbox.get_points()[1,1]
+                x0,y0,x1,y1=middle_of_box-width/(2.),bbox.get_points()[0,1],middle_of_box+width/(2.),bbox.get_points()[1,1]
                 if top_chip[c]==6:
                     x0=x0
                     x1=x1
                 if top_chip[c]==5:
-                    x0=x0+(xpixels/binn+xgap)
-                    x1=x1+(xpixels/binn+xgap)
+                    x0=x0+(xpixels/binnx+xgap)
+                    x1=x1+(xpixels/binnx+xgap)
                 if top_chip[c]==8:
-                    x0=x0+2.*(xpixels/binn+xgap)
-                    x1=x1+2.*(xpixels/binn+xgap)
+                    x0=x0+2.*(xpixels/binnx+xgap)
+                    x1=x1+2.*(xpixels/binnx+xgap)
                 if top_chip[c]==7:
-                    x0=x0+3.*(xpixels/binn+xgap)
-                    x1=x1+3.*(xpixels/binn+xgap)
+                    x0=x0+3.*(xpixels/binnx+xgap)
+                    x1=x1+3.*(xpixels/binnx+xgap)
                 BOXES_item=Bbox(np.array([[x0,y0],[x1,y1]]))
                 BOXES=np.append(BOXES,BOXES_item)
-                for y in range(0,2*ypixels/binn+ygap):
+                for y in range(0,2*ypixels/binny+ygap):
                     if y>bbox.get_points()[0,1] and y<bbox.get_points()[1,1]:
-                        for x in range(0,xpixels):
+                        for x in range(0,xpixels/binnx):
                             #if x>bbox.get_points()[0,0] and x<bbox.get_points()[1,0]:
-                            if x>middle_of_box-width/(2.*binn) and x<middle_of_box+width/(2.*binn):
+                            if x>middle_of_box-width/(2.) and x<middle_of_box+width/(2.):
                                 masks[c,y,x]=1.0
         ax[1].imshow(masks[c,:,:], cmap=plt.cm.Greys_r, interpolation='none')
         ax[1].set_title('Generated Masks')
         plt.show(block=False)
-    for x in range(ypixels,ypixels+ygap):
+    for x in range(ypixels/binny,ypixels/binny+ygap):
         masks[:,y,:]=np.nan
     #print BOXES
     BOXES=np.reshape(BOXES,(len(BOXES)/4,4))
@@ -102,26 +102,26 @@ def FindMasks(flat_path,root_flat,flat_thres,SAVEPATH,binn):
     np.savez_compressed(SAVEPATH+'Masks.npz',Masks=masks,paths=paths,boxes=BOXES)
     return masks
 
-def CombineMasks(mask_full,SAVEPATH,binn):
+def CombineMasks(mask_full,SAVEPATH,binnx,binny):
 #    import matplotlib.patches as patches
-    y_arr_f=np.linspace(0,2*ypixels/binn+ygap,2*ypixels/binn+ygap)
-    x_arr_f=np.linspace(0,4*xpixels/binn+3*xgap,4*xpixels/binn+3*xgap)
+    y_arr_f=np.linspace(0,2*ypixels/binny+ygap,2*ypixels/binny+ygap)
+    x_arr_f=np.linspace(0,4*xpixels/binnx+3*xgap,4*xpixels/binnx+3*xgap)
     X,Y=np.meshgrid(x_arr_f,y_arr_f)
 
     fig0,ax0=plt.subplots(1,figsize=(8,8))
     cs=ax0.contourf(X,Y,mask_full[0,:,:],cmap=plt.cm.Greys_r)
     fig0.colorbar(cs,cmap=plt.cm.Greys_r)
     cs=ax0.contour(X,Y,mask_full[0,:,:],levels=[0.99],color='red',linewidth=2.0)
-    ax0.set_ylim(2*ypixels/binn+ygap,0)
+    ax0.set_ylim(2*ypixels/binny+ygap,0)
     #### chip edges....
-    plt.axhline(y=ypixels/binn,color='yellow')
-    plt.axhline(y=ypixels/binn+ygap,color='yellow')
-    plt.axvline(x=xpixels/binn,color='yellow')
-    plt.axvline(x=xpixels/binn+xgap,color='yellow')
-    plt.axvline(x=2*xpixels/binn+xgap,color='yellow')
-    plt.axvline(x=2*xpixels/binn+2*xgap,color='yellow')
-    plt.axvline(x=3*xpixels/binn+2*xgap,color='yellow')
-    plt.axvline(x=3*xpixels/binn+3*xgap,color='yellow')
+    plt.axhline(y=ypixels/binny,color='yellow')
+    plt.axhline(y=ypixels/binny+ygap,color='yellow')
+    plt.axvline(x=xpixels/binnx,color='yellow')
+    plt.axvline(x=xpixels/binnx+xgap,color='yellow')
+    plt.axvline(x=2*xpixels/binnx+xgap,color='yellow')
+    plt.axvline(x=2*xpixels/binnx+2*xgap,color='yellow')
+    plt.axvline(x=3*xpixels/binnx+2*xgap,color='yellow')
+    plt.axvline(x=3*xpixels/binnx+3*xgap,color='yellow')
     ####
     paths=np.load(SAVEPATH+'Masks.npz')['boxes']#cs.collections[0].get_paths()
     for i in range(0,len(paths)):
@@ -130,7 +130,7 @@ def CombineMasks(mask_full,SAVEPATH,binn):
         bbox=Bbox(np.array([[p0[0],p0[1]],[p0[2],p0[3]]]))
         #print bbox
         #print bbox.get_points
-        if np.abs((bbox.get_points()[0,0])-(bbox.get_points()[1,0]))> 190./binn:
+        if np.abs((bbox.get_points()[0,0])-(bbox.get_points()[1,0]))> 190.:
             ax0.add_patch(patches.Rectangle((p0[0],p0[1]),p0[2]-p0[0],p0[3]-p0[1], facecolor='none', ec='green', linewidth=2, zorder=50))
     ax0.set_title('Un-Combined Masks, Full Frame')
     plt.show(block=False)
@@ -192,22 +192,22 @@ def CombineMasks(mask_full,SAVEPATH,binn):
     cs=ax1.contourf(X,Y,mask_full[0,:,:],cmap=plt.cm.Greys_r)
     fig1.colorbar(cs,cmap=plt.cm.Greys_r)
     cs=ax1.contour(X,Y,mask_full[0,:,:],levels=[0.99],color='red',linewidth=2.0)
-    ax1.set_ylim(2*ypixels/binn+ygap,0)
+    ax1.set_ylim(2*ypixels/binny+ygap,0)
     #### chip edges....
-    plt.axhline(y=ypixels/binn,color='yellow')
-    plt.axhline(y=ypixels/binn+ygap,color='yellow')
-    plt.axvline(x=xpixels/binn,color='yellow')
-    plt.axvline(x=xpixels/binn+xgap,color='yellow')
-    plt.axvline(x=2*xpixels/binn+xgap,color='yellow')
-    plt.axvline(x=2*xpixels/binn+2*xgap,color='yellow')
-    plt.axvline(x=3*xpixels/binn+2*xgap,color='yellow')
-    plt.axvline(x=3*xpixels/binn+3*xgap,color='yellow')
+    plt.axhline(y=ypixels/binny,color='yellow')
+    plt.axhline(y=ypixels/binny+ygap,color='yellow')
+    plt.axvline(x=xpixels/binnx,color='yellow')
+    plt.axvline(x=xpixels/binnx+xgap,color='yellow')
+    plt.axvline(x=2*xpixels/binnx+xgap,color='yellow')
+    plt.axvline(x=2*xpixels/binnx+2*xgap,color='yellow')
+    plt.axvline(x=3*xpixels/binnx+2*xgap,color='yellow')
+    plt.axvline(x=3*xpixels/binnx+3*xgap,color='yellow')
     ####
     #paths=cs.collections[0].get_paths()
     for i in range(0,len(boxes)/4):
         x0,y0,x1,y1=mask_edges[i,0],mask_edges[i,1],mask_edges[i,2],mask_edges[i,3]
         ax1.add_patch(patches.Rectangle((x0,y0),np.abs(x0-x1),np.abs(y0-y1), facecolor='none', ec='cyan', linewidth=2, zorder=50))
-        ax1.annotate(i,xy=(x0+100/binn,y1-500/binn),ha='center',va='center',fontsize=8,color='red',zorder=51)
+        ax1.annotate(i,xy=(x0+100/binnx,y1-500/binny),ha='center',va='center',fontsize=8,color='red',zorder=51)
     ax1.set_title('Combined Masks, Full Frame')
     plt.show(block=False)
     np.savez_compressed(SAVEPATH+'CombinedMasks.npz',mask_edges=mask_edges,boxes=boxes)

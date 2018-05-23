@@ -12,7 +12,7 @@ import matplotlib.gridspec as gridsec
 
 from setup import *
 
-def BinWhite(SAVEPATH,midtime,start,end,corr,flip):
+def BinWhite(SAVEPATH,midtime,start,end,corr,flip,skip):
     if corr==True:
         #cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All_Corr.npz')['convolved']
         cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All_Corr.npz')['data']
@@ -70,6 +70,8 @@ def BinWhite(SAVEPATH,midtime,start,end,corr,flip):
     bin_ptn=np.empty([n_exp,numbins,n_obj])*np.nan
     
     for s in range(0,n_obj):
+        if s in skip:
+            continue
     #if s==9:#if s==8 or s==9 or s==10:
         #if s==1 or s==2 or s==5 or s==7:
         #    continue
@@ -151,7 +153,7 @@ def BinWhite(SAVEPATH,midtime,start,end,corr,flip):
     else:
         np.savez_compressed(SAVEPATH+'Binned_Data_White.npz',bins=bin_arr,bin_centers=bin_ctr,bin_counts=bin_cnt,bin_err=bin_err,bin_ptn=bin_ptn)
     
-def BinLam(SAVEPATH,midtime,start,end,width,corr,flip):
+def BinLam(SAVEPATH,midtime,start,end,width,corr,flip,skip):
     if corr==True:
         cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All_Corr.npz')['data']
         wav_arr=np.load(SAVEPATH+'ShiftedSpec_All_Corr.npz')['wave']
@@ -209,6 +211,8 @@ def BinLam(SAVEPATH,midtime,start,end,width,corr,flip):
     bin_ptn=np.empty([n_exp,numbins,n_obj])*np.nan
     
     for s in range(0,n_obj):
+        if s in skip:
+            continue
     #if s==9:#if s==8 or s==9 or s==10:
         #if s==1 or s==2 or s==5 or s==7:
         #    continue
