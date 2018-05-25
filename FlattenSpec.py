@@ -322,5 +322,6 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d
             plt.close()
             
         print datetime.now()-time0   
-    np.savez_compressed('FlattenedSpectra.npz',flat_spec=flat_spec,xalign=Xalign_data,fwhm_ar=fwhm_data,gaus_params=gaus_params)
+    np.savez_compressed(SAVEPATH+'FlattenedSpectra.npz',flat_spec=flat_spec,
+                        xalign=Xalign_data,fwhm_ar=fwhm_data,gaus_params=gaus_params)
      

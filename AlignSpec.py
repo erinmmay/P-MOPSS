@@ -7,7 +7,10 @@ from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 from scipy.signal import medfilt
 
+import matplotlib
 import matplotlib.pyplot as plt
+
+from outlier_removal import outlierr_c
 
 from setup import *
 
@@ -17,12 +20,10 @@ from setup import *
 def func_gaus(x,sigma):
     return 1.0-np.exp(-(1./2.)*(x/(sigma))**2.)
 
-def AlignSpec(gris,osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn,corr,ver,time_trim,skip):
+def AlignSpec(gris,osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn,ver,ver_l,time_trim,skip):
     masks=np.load(SAVEPATH+'FinalMasks.npz')['masks']
-    if corr==True:
-        input_data=np.load(SAVEPATH+'FlattenedSpectra_Corr.npz')['flat_spec']
-    else:
-        input_data=np.load(SAVEPATH+'FlattenedSpectra.npz')['flat_spec']
+
+    input_data=np.load(SAVEPATH+'FlattenedSpectra.npz')['flat_spec']
     n_obj=input_data.shape[0]
     n_exp=input_data.shape[1]
     n_pix=input_data.shape[2]
@@ -33,36 +34,36 @@ def AlignSpec(gris,osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex
 
     pix_ar=np.linspace(n_pix-1,0,n_pix)
     pix_ar_os=np.linspace(n_pix-1,0,int(osr*n_pix))
-    print pix_ar
-    print (n_pix-ygap)/2, n_pix
-    print ypixels, 2*ypixels+ygap
-    print 
-    if binn>1:
-        for p in range(0,len(pix_ar)):
-            if pix_ar[p]<=ypixels/float(binn):
-                pix_ar[p]=pix_ar[p]*float(binn)
-            else:
-                pix_ar[p]= (pix_ar[p]-ygap-ypixels/float(binn))*float(binn)+ypixels+ygap
-        for p in range(0,len(pix_ar_os)):
-            if pix_ar_os[p]<=ypixels/float(binn):
-                pix_ar_os[p]=pix_ar_os[p]*float(binn)
-            else:
-                pix_ar_os[p]= (pix_ar_os[p]-ygap-ypixels/float(binn))*float(binn)+ypixels+ygap
-        plt.figure(201,figsize=(8,6))
-        plt.plot(pix_ar,'.',color='black')
-        plt.axhline(y=ypixels)
-        plt.axhline(y=ypixels+ygap)
-        plt.axvline(x=ypixels/binn)
-        plt.axvline(x=ypixels/binn+ygap)
-        plt.show(block=False)
-        plt.figure(202,figsize=(8,6))
-        plt.plot(pix_ar_os,'.',color='blue')
-        plt.axhline(y=ypixels)
-        plt.axhline(y=ypixels+ygap)
-        plt.axvline(x=osr*(ypixels/binn))
-        plt.axvline(x=osr*(ypixels/binn+ygap))
-        plt.show(block=False)
-    print pix_ar      
+#     print pix_ar
+#     print (n_pix-ygap)/2, n_pix
+#     print ypixels, 2*ypixels+ygap
+#     print 
+#     if binn>1:
+#         for p in range(0,len(pix_ar)):
+#             if pix_ar[p]<=ypixels/float(binn):
+#                 pix_ar[p]=pix_ar[p]*float(binn)
+#             else:
+#                 pix_ar[p]= (pix_ar[p]-ygap-ypixels/float(binn))*float(binn)+ypixels+ygap
+#         for p in range(0,len(pix_ar_os)):
+#             if pix_ar_os[p]<=ypixels/float(binn):
+#                 pix_ar_os[p]=pix_ar_os[p]*float(binn)
+#             else:
+#                 pix_ar_os[p]= (pix_ar_os[p]-ygap-ypixels/float(binn))*float(binn)+ypixels+ygap
+#         plt.figure(201,figsize=(8,6))
+#         plt.plot(pix_ar,'.',color='black')
+#         plt.axhline(y=ypixels)
+#         plt.axhline(y=ypixels+ygap)
+#         plt.axvline(x=ypixels/binn)
+#         plt.axvline(x=ypixels/binn+ygap)
+#         plt.show(block=False)
+#         plt.figure(202,figsize=(8,6))
+#         plt.plot(pix_ar_os,'.',color='blue')
+#         plt.axhline(y=ypixels)
+#         plt.axhline(y=ypixels+ygap)
+#         plt.axvline(x=osr*(ypixels/binn))
+#         plt.axvline(x=osr*(ypixels/binn+ygap))
+#         plt.show(block=False)
+#     print pix_ar      
     
     shift_pixels=np.empty([n_obj,n_exp,n_pix])*np.nan
     
@@ -94,44 +95,41 @@ def AlignSpec(gris,osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex
         #    continue
         counter=0
         
-        plt.figure(101,figsize=(12,5))
+        norm=matplotlib.colors.Normalize(vmin=0,vmax=n_exp)
+        colors=matplotlib.cm.viridis
+        scal_m=matplotlib.cm.ScalarMappable(cmap=colors,norm=norm)
+        scal_m.set_array([])
+
+        fig=plt.figure(201,figsize=(15,2))
         for t in range(0,n_exp):
-            if t%10==0:
-                plt.plot(pix_ar,input_data[o,t,:])
-        plt.figtext(0.2,0.8,'OBJECT '+str(int(o)),fontsize=15,color='red')
-        plt.xlabel('Stitched Pixels')
-        plt.ylabel('ADUs')
-        plt.title('RAW')
+            plt.plot(pix_ar,input_data[o,t,:],color=scal_m.to_rgba(t),linewidth=1.0)
+        # [left, bottom, width, height
+        plt.xlabel('Pixels')
+        cbaxes = fig.add_axes([0.15, 0.2, 0.02, 0.6]) 
+        cb = plt.colorbar(scal_m, cax = cbaxes)  
         plt.show(block=False)
-        plt.clf()
+        plt.close()
         
         print ' --Filtering...'
+        tc=0
         for t in range(0+2,n_exp-2-time_trim):
-            timemedian=medfilt(input_data[o,t,:],kernel_size=ks)
-            data_medsb=input_data[o,t,:]-timemedian
-            data_acmed=np.nanmedian(data_medsb)
-            data_acstd=np.nanstd(data_medsb)
-            if t%10==0:
-                print '    -->> TIME: ',t
-            for p in range(0,n_pix):
-                p=int(p)
-                if data_medsb[p]>data_acmed+olv*data_acstd or data_medsb[p]<data_acmed-olv*data_acstd:
-                    counter+=1
-                    val=timemedian[p]
-                    input_data[o,t,p]=val
+            counter,input_data[o,t,:]=outlierr_c(np.copy(input_data[o,t,:]),ks,olv)
+            tc+=counter
 
-        print '       -->>',counter/n_exp
+        print '       -->>',float(tc)/float(n_exp), tc
         
-        plt.figure(102,figsize=(12,5))
+
+        fig=plt.figure(102,figsize=(15,2))
         for t in range(0,n_exp):
-            if t%10==0:
-                plt.plot(pix_ar,input_data[o,t,:])
-        plt.figtext(0.2,0.8,'OBJECT '+str(int(o)),fontsize=15,color='red')
-        plt.xlabel('Stitched Pixels')
-        plt.ylabel('ADUs')
-        plt.title('FILTERED')
+            plt.plot(pix_ar,input_data[o,t,:],color=scal_m.to_rgba(t),linewidth=1.0)
+        # [left, bottom, width, height
+        plt.xlabel('Pixels')
+        cbaxes = fig.add_axes([0.15, 0.2, 0.02, 0.6]) 
+        cb = plt.colorbar(scal_m, cax = cbaxes)  
+        plt.figtext(0.2,0.7,tc,color='black',fontsize=25)
         plt.show(block=False)
-        plt.clf()
+        plt.close()
+            
         
         print ' --Convolving with Gaussian...'
         if fwhm_t==False:
@@ -144,7 +142,7 @@ def AlignSpec(gris,osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex
                 cnv_data[o,t,:]=convolve(input_data[o,t,:],gaus_cnv,'same')
             
         else:
-            fwhm_arr=np.load(SAVEPATH+'FlattenedSpectra.npz')['fwhm_av']
+            fwhm_arr=np.load(SAVEPATH+'FlattenedSpectra.npz')['fwhm_ar']
             fwhm=fwhm_arr[o,t]
             
             for t in range(0,n_exp-time_trim):
@@ -157,16 +155,16 @@ def AlignSpec(gris,osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex
                 gaus_cnv=func_gaus(width_line,sigma)
                 cnv_data[o,t,:]=convolve(input_data[o,t,:],gaus_cnv,'same')
         
-        plt.figure(103,figsize=(12,5))
+        fig=plt.figure(103,figsize=(15,2))
         for t in range(0,n_exp):
             if t%10==0:
-                plt.plot(pix_ar,cnv_data[o,t,:])
-        plt.figtext(0.2,0.8,'OBJECT '+str(int(o)),fontsize=15,color='red')
-        plt.xlabel('Stitched Pixels')
-        plt.ylabel('ADUs')
-        plt.title('CONVOLVED')
+                plt.plot(pix_ar,cnv_data[o,t,:],color=scal_m.to_rgba(t),linewidth=1.0)
+        # [left, bottom, width, height
+        plt.xlabel('Pixels')
+        cbaxes = fig.add_axes([0.15, 0.2, 0.02, 0.6]) 
+        cb = plt.colorbar(scal_m, cax = cbaxes)  
         plt.show(block=False)
-        plt.clf()
+        plt.close()
         
         print ' --Oversampling...'
         for t in range(0,n_exp-time_trim):
@@ -304,16 +302,18 @@ def AlignSpec(gris,osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex
             shift=np.nanmedian([shift_o2_7594,shift_o2_6867,shift_ha_6563,shift_na_5896])
             y_shift[o,t]=float(shift)/float(osr)
             
-            if t%10==0:
-                print ' '
-                print '*****************'
-                print 'TIME: ', t
-                print 'o2_7594 shift: ', shift_o2_7594
-                print 'o2_6867 shift: ', shift_o2_6867
-                print 'ha_6563 shift: ', shift_ha_6563
-                print 'na_5896 shift: ', shift_na_5896
             
-                print 'mean shift: ', shift, float(shift)/float(osr)
+            if t%10==0:
+                if ver_l==True:
+                    print ' '
+                    print '*****************'
+                    print 'TIME: ', t
+                    print 'o2_7594 shift: ', shift_o2_7594
+                    print 'o2_6867 shift: ', shift_o2_6867
+                    print 'ha_6563 shift: ', shift_ha_6563
+                    print 'na_5896 shift: ', shift_na_5896
+
+                    print 'mean shift: ', shift, float(shift)/float(osr)
                 
                
                 if ver==True:
@@ -443,13 +443,15 @@ def AlignSpec(gris,osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex
         #for t in range(0,n_exp):
         #    inter=interp1d(wav_ar[o,t,:],smooth_data[o,t,:])
         #    int_data[o,t,:]=interp1d(wav_ar[o,t,:],smooth_data[o,t,:])
-        plt.figure(104,figsize=(12,3))
-        plt.plot(np.linspace(1,n_exp,n_exp)[1:],y_shift[o,1:],'.',markersize=12,color='blue')
+        plt.figure(104,figsize=(15,2))
+        plt.plot(np.linspace(1,n_exp,n_exp)[1:],y_shift[o,1:],'.',markersize=12,markerfacecolor=scal_m.to_rgba(2),
+                markeredgecolor='black')
         plt.ylim(-5,5)
+        plt.xlabel('Exposure Number',fontsize=15)
         plt.show(block=False)
         
         
-        plt.figure(105,figsize=(12,5))
+        plt.figure(105,figsize=(15,2))
         
         plt.plot(wav_ar[o,0,:],input_data[o,0,:]/np.nanmax(input_data[o,0,:]),color='black',linewidth=2.0)
         plt.plot(wav_ar[o,0,:],cnv_data[o,0,:]/np.nanmax(cnv_data[o,0,:]),color='red',linewidth=1.0)
@@ -458,10 +460,8 @@ def AlignSpec(gris,osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex
         plt.axvline(x=6562.81,color='grey',linewidth=0.5,linestyle='--')
         plt.axvline(x=5895.9,color='grey',linewidth=0.5,linestyle='--')
         plt.axvline(x=5889.9,color='grey',linewidth=0.5,linestyle='--')
+        plt.xlabel('Wavelength, [A]',fontsize=15)
         plt.show(block=False)
-    if corr==True:
-        np.savez_compressed(SAVEPATH+'ShiftedSpec_All_Corr.npz',
-                            data=input_data,convolved=cnv_data,pixels=shift_pixels,wave=wav_ar,yshift=y_shift)
-    else:
-        np.savez_compressed(SAVEPATH+'ShiftedSpec_All.npz',
+    
+    np.savez_compressed(SAVEPATH+'ShiftedSpec_All.npz',
                             data=input_data,convolved=cnv_data,pixels=shift_pixels,wave=wav_ar,yshift=y_shift)
