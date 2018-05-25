@@ -13,18 +13,6 @@ from setup import *
 
 from outlier_removal import outlierr_c
 
-# def outlierr(data,ks,sd):
-#     median=medfilt(data,kernel_size=ks)
-#     med_rm=data-median
-    
-#     stddev=np.nanstd(med_rm)
-#     med_va=np.nanmedian(med_rm)
-#     for i in range(0,len(data)):
-#         if med_rm[i]>sd*stddev+med_va or med_rm[i]<med_va-sd*stddev:
-#             data[i]=median[i]
-    
-#     return data
-
 def BG_remove(extray,SAVEPATH,binnx,binny,Lflat,Ldark,ed_l,ed_u,ed_t,ks_b,sig_b,o_b,
                 ver,ver_full,ver_t,trip,time_start,time_trim,obj_skip):
     #extray= number of pixels in y direction extra that were extracted
@@ -70,15 +58,20 @@ def BG_remove(extray,SAVEPATH,binnx,binny,Lflat,Ldark,ed_l,ed_u,ed_t,ks_b,sig_b,
         print '      (done)'
         
         y0=int(mask[1])  #pixel number of inital extraction
+        y_start=np.int(np.max([0,y0-extray]))  #including extray
         ### BINN THE SIZES OF THE MASKS in Y ###
         if binny>1:
-            if y0<ypixels:
+            if y0<=ypixels:
                 y0=y0/binny
             if y0>ypixels:
                 y0=(y0-ypixels-ygap)/binny+ypixels/binny+ygap
                 
+            if y_start<=ypxiels:
+                y_start=y_start/binny
+            if y_start>ypixels:
+                y_start=(y_start-ypixels-ygap)/binny+ypixels/binny+ygap
+                
         ##################################
-        y_start=np.int(np.max([0,y0-extray]))  #including extray
         n_rows=obj_data.shape[1]
         xwidth=obj_data.shape[2]
         
@@ -129,9 +122,7 @@ def BG_remove(extray,SAVEPATH,binnx,binny,Lflat,Ldark,ed_l,ed_u,ed_t,ks_b,sig_b,
                 else:
                     bg_dat=np.copy(bg_dat_2)
                     tr=c1+c2
-                    
-                 
-                    
+ 
                 ### replace row_data with corrected background data ###
                 row_data[ed_t:ed_l]=bg_dat[:ed_l-ed_t]
                 row_data[xwidth-ed_u:xwidth-ed_t]=bg_dat[ed_l-ed_t:]
