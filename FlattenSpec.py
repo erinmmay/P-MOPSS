@@ -15,6 +15,8 @@ from setup import *
 from outlier_removal import outlierr_c
 from outlier_removal import outlierr
 
+import math
+
 def Gaussian(x,a,b,c,d):
     return a*np.exp(-((x-b)**2.)/(2.*c**2.))+d
 
@@ -157,6 +159,10 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d
                             plt.show(block=False)
                             plt.close()
                     gaus_params[o,t,j,:]=np.empty([4])*np.nan
+                    if t==0:
+                        gaus_params[o,t,j,2]=ing_fwhm
+                    elif t>0:
+                        gaus_params[o,t,j,2]=gaus_params[o,t-1,j,2]
                     
                    
                 
@@ -271,8 +277,28 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d
                     Xalign_data[o,t,j,:]=row_data[int(gaus_params[o,t,j,1])-(50/binnx)-1:int(gaus_params[o,t,j,1])+50/binnx]
             
             if CON==False:
-                fwhm_data[o,t]=int(np.nanmedian(gaus_params[o,t,:,2]))
-                
+                fwhm_data[o,t]=math.ceil(np.nanmedian(gaus_params[o,t,:,2]))
+            
+            if ver_full==True:
+                norm=matplotlib.colors.Normalize(vmin=0,vmax=n_rows)
+                colors=matplotlib.cm.plasma
+                scal_m=matplotlib.cm.ScalarMappable(cmap=colors,norm=norm)
+                scal_m.set_array([])
+                fig=plt.figure(401,figsize=(15,3))
+                plt.plot(gaus_params[o,t,:,2],color='black',linewidth=2.0)
+                plt.axhline(y=fwhm_data[o,t],color='red',linewidth=1.0)
+                plt.show(block=False)
+                plt.close()
+                fig=plt.figure(501,figsize=(15,8))
+                for j in range(0,n_rows):
+                    plt.plot(Xalign_data[o,t,j,:],color=scal_m.to_rgba(j),linewidth=1.0)
+                    cbaxes = fig.add_axes([0.15, 0.2, 0.02, 0.6]) 
+                    cb = plt.colorbar(scal_m, cax = cbaxes)  
+                    plt.figtext(0.2,0.8,t,color='black',fontsize=25)
+                    plt.axvline(x=(50)/binnx+1-a_s*fwhm_data[o,t],color='black',linewidth=1.0)
+                    plt.axvline(x=(50)/binnx+1+a_s*fwhm_data[o,t],color='black',linewidth=1.0)
+                plt.show(block=False)
+                plt.close()
             
             if ver_a==True:
                 if t%10==0:
@@ -286,17 +312,18 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d
                     ax[0].set_xticklabels([])
                     ax[1].imshow((Xalign_data[o,t,:,:].T),cmap=plt.cm.plasma,aspect='auto')
                     ax[1].set_xlim(y_start,obj_data.shape[1]+y_start)
-                    ax[1].axhline(y=51-a_s*fwhm_data[o,t],color='white',linewidth=1.0)
-                    ax[1].axhline(y=51+a_s*fwhm_data[o,t],color='white',linewidth=1.0)
-                    ax[1].axhline(y=51,color='white',linewidth=0.5,alpha=0.6)
-                    ax[1].set_ylim(51-2*a_s*fwhm_data[o,t],51+2*a_s*fwhm_data[o,t])
+                    ax[1].axhline(y=(50)/binnx+1-a_s*fwhm_data[o,t],color='white',linewidth=1.0)
+                    ax[1].axhline(y=(50)/binnx+1+a_s*fwhm_data[o,t],color='white',linewidth=1.0)
+                    ax[1].axhline(y=(50)/binnx+1,color='white',linewidth=0.5,alpha=0.6)
+                    ax[1].set_ylim((50)/binnx+1-2*a_s*fwhm_data[o,t],(50)/binnx+1+2*a_s*fwhm_data[o,t])
                     ax[1].set_xticklabels([])
                     plt.figtext(0.15,0.70,t,color='grey',fontsize=30)
                     plt.show(block=False)
                     plt.close()
                     
         if CON==True:
-            fwhm_data[o,:]=int(np.nanmedian(gaus_params[o,:,:,2]))
+            fwhm_data[o,:]=math.ceil(np.nanmedian(gaus_params[o,:,:,2]))
+        
         
         ### flatten spectra ####
         rm_s=0

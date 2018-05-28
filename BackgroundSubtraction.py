@@ -66,7 +66,7 @@ def BG_remove(extray,SAVEPATH,binnx,binny,Lflat,Ldark,ed_l,ed_u,ed_t,ks_b,sig_b,
             if y0>ypixels:
                 y0=(y0-ypixels-ygap)/binny+ypixels/binny+ygap
                 
-            if y_start<=ypxiels:
+            if y_start<=ypixels:
                 y_start=y_start/binny
             if y_start>ypixels:
                 y_start=(y_start-ypixels-ygap)/binny+ypixels/binny+ygap
