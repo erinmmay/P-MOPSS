@@ -12,19 +12,12 @@ import matplotlib.gridspec as gridsec
 
 from setup import *
 
-def BinWhite(SAVEPATH,midtime,start,end,corr,flip,skip):
-    if corr==True:
-        #cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All_Corr.npz')['convolved']
-        cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All_Corr.npz')['data']
-        wav_arr=np.load(SAVEPATH+'ShiftedSpec_All_Corr.npz')['wave']
-        ptn_err=np.load(SAVEPATH+'FlattenedSpectra_Corr.npz')['pht_err']
-        tot_err=np.load(SAVEPATH+'FlattenedSpectra_Corr.npz')['tot_err']
-    else:
-        #cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All.npz')['convolved']
-        cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All.npz')['data']
-        wav_arr=np.load(SAVEPATH+'ShiftedSpec_All.npz')['wave']
-        #ptn_err=np.load(SAVEPATH+'FlattenedSpectra.npz')['pht_err']
-        #tot_err=np.load(SAVEPATH+'FlattenedSpectra.npz')['tot_err']
+def BinWhite(SAVEPATH,midtime,start,end,flip,skip,binny):
+    #cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All.npz')['convolved']
+    cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All.npz')['data']
+    wav_arr=np.load(SAVEPATH+'ShiftedSpec_All.npz')['wave']
+    #ptn_err=np.load(SAVEPATH+'FlattenedSpectra.npz')['pht_err']
+    #tot_err=np.load(SAVEPATH+'FlattenedSpectra.npz')['tot_err']
    
     if flip==True:
         cnt_arr=np.flip(cnt_arr,axis=2)
@@ -36,8 +29,8 @@ def BinWhite(SAVEPATH,midtime,start,end,corr,flip,skip):
     n_obj=cnt_arr.shape[0]
     n_exp=cnt_arr.shape[1]
     
-    pixels=2*ypixels+ygap
-    pix_arr=np.linspace(0,ypixels,ypixels)
+    pixels=2*ypixels/binny+ygap
+    pix_arr=np.linspace(0,pixels,pixels)
     
     print pixels
     
@@ -103,7 +96,8 @@ def BinWhite(SAVEPATH,midtime,start,end,corr,flip,skip):
                 ptne_arr=np.array([])
                 counter=0
                 if p>0:
-                    while (wav_arr[s,t,p-1]+wav_arr[s,t,p])/2. < wave_cntr+width_bin and p < pixels-1:
+                    while (wav_arr[s,t,p-1]+wav_arr[s,t,p])/2. < wave_cntr+width_bin and p < pixels-2:
+                        #print p, pixels
                         lowerbound=(wav_arr[s,t,p-1]+wav_arr[s,t,p])/2.
                         upperbound=(wav_arr[s,t,p+1]+wav_arr[s,t,p])/2.
                         if wave_cntr>lowerbound and wave_cntr<upperbound:
@@ -148,21 +142,12 @@ def BinWhite(SAVEPATH,midtime,start,end,corr,flip,skip):
         #plt.pause(2.0)
         #print bin_err[0,:,s], bin_ptn[0,:,s]
     plt.close()
-    if corr==True:
-        np.savez_compressed(SAVEPATH+'Binned_Data_White_Corr.npz',bins=bin_arr,bin_centers=bin_ctr,bin_counts=bin_cnt,bin_err=bin_err,bin_ptn=bin_ptn)
-    else:
-        np.savez_compressed(SAVEPATH+'Binned_Data_White.npz',bins=bin_arr,bin_centers=bin_ctr,bin_counts=bin_cnt,bin_err=bin_err,bin_ptn=bin_ptn)
+    np.savez_compressed(SAVEPATH+'Binned_Data_White.npz',bins=bin_arr,bin_centers=bin_ctr,
+                            bin_counts=bin_cnt,bin_err=bin_err,bin_ptn=bin_ptn)
     
-def BinLam(SAVEPATH,midtime,start,end,width,corr,flip,skip):
-    if corr==True:
-        cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All_Corr.npz')['data']
-        wav_arr=np.load(SAVEPATH+'ShiftedSpec_All_Corr.npz')['wave']
-    
-        ptn_err=np.load(SAVEPATH+'FlattenedSpectra_Corr.npz')['pht_err']
-        tot_err=np.load(SAVEPATH+'FlattenedSpectra_Corr.npz')['tot_err']
-    else:
-        cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All.npz')['data']
-        wav_arr=np.load(SAVEPATH+'ShiftedSpec_All.npz')['wave']
+def BinLam(SAVEPATH,midtime,start,end,width,flip,skip,binny):
+    cnt_arr=np.load(SAVEPATH+'ShiftedSpec_All.npz')['data']
+    wav_arr=np.load(SAVEPATH+'ShiftedSpec_All.npz')['wave']
     
         #ptn_err=np.load(SAVEPATH+'FlattenedSpectra.npz')['pht_err']
         #tot_err=np.load(SAVEPATH+'FlattenedSpectra.npz')['tot_err']
@@ -177,7 +162,7 @@ def BinLam(SAVEPATH,midtime,start,end,width,corr,flip,skip):
     n_obj=cnt_arr.shape[0]
     n_exp=cnt_arr.shape[1]
     
-    pixels=2*ypixels+ygap
+    pixels=2*ypixels/binny+ygap
     pix_arr=np.linspace(0,pixels,pixels)
     
     print pixels
@@ -294,8 +279,6 @@ def BinLam(SAVEPATH,midtime,start,end,width,corr,flip,skip):
         #plt.pause(2.0)
         #print bin_err[0,:,s], bin_ptn[0,:,s]
     plt.close()
-    if corr==True:
-        np.savez_compressed(SAVEPATH+'Binned_Data_'+str(int(width_bin))+'_Corr.npz',bins=bin_arr,bin_centers=bin_ctr,bin_counts=bin_cnt,bin_err=bin_err,bin_ptn=bin_ptn)
-    else:
-        np.savez_compressed(SAVEPATH+'Binned_Data_'+str(int(width_bin))+'.npz',bins=bin_arr,bin_centers=bin_ctr,bin_counts=bin_cnt,bin_err=bin_err,bin_ptn=bin_ptn)
+    np.savez_compressed(SAVEPATH+'Binned_Data_'+str(int(width_bin))+'.npz',bins=bin_arr,bin_centers=bin_ctr,
+                        bin_counts=bin_cnt,bin_err=bin_err,bin_ptn=bin_ptn)
     

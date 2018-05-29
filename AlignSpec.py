@@ -11,6 +11,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 from outlier_removal import outlierr_c
+from bin_y_shift import bin_y_shift
 
 from setup import *
 
@@ -20,13 +21,14 @@ from setup import *
 def func_gaus(x,sigma):
     return 1.0-np.exp(-(1./2.)*(x/(sigma))**2.)
 
-def AlignSpec(gris,osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binn,ver,ver_l,time_trim,skip):
+def AlignSpec(gris,osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binny,ver,ver_l,time_trim,skip):
     masks=np.load(SAVEPATH+'FinalMasks.npz')['masks']
 
     input_data=np.load(SAVEPATH+'FlattenedSpectra.npz')['flat_spec']
     n_obj=input_data.shape[0]
     n_exp=input_data.shape[1]
     n_pix=input_data.shape[2]
+    n_pix_chip=(n_pix-ygap)/2
     
     cnv_data=np.empty([n_obj,n_exp,n_pix])*np.nan
     ovs_data=np.empty([n_obj,n_exp,int(osr*n_pix)])*np.nan
@@ -38,6 +40,9 @@ def AlignSpec(gris,osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex
 #     print (n_pix-ygap)/2, n_pix
 #     print ypixels, 2*ypixels+ygap
 #     print 
+    if binny>1:
+        pix_ar=bin_y_shift(pix_ar,binny)
+        pix_ar_os=bin_y_shift(pix_ar_os,binny)
 #     if binn>1:
 #         for p in range(0,len(pix_ar)):
 #             if pix_ar[p]<=ypixels/float(binn):
@@ -66,11 +71,8 @@ def AlignSpec(gris,osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex
 #     print pix_ar      
     
     shift_pixels=np.empty([n_obj,n_exp,n_pix])*np.nan
-    
     wav_ar=np.empty([n_obj,n_exp,n_pix])*np.nan
-    
     y_shift=np.empty([n_obj,n_exp])*np.nan
-    
     
     #medfilt_data=medfilt(input_data,kernel_size=[1,1,window])
     #stddev_data=np.empty([n_obj,n_exp,n_pix])

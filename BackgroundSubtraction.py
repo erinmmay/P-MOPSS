@@ -63,17 +63,24 @@ def BG_remove(extray,SAVEPATH,binnx,binny,Lflat,Ldark,ed_l,ed_u,ed_t,ks_b,sig_b,
         if binny>1:
             if y0<=ypixels:
                 y0=y0/binny
-            if y0>ypixels:
+            if y0>ypixels and y0<=ypixels+ygap:
+                dy=y0-ypixels
+                y0=(y0-ypixels-dy)/binny+ypixels/binny+dy
+            if y0>ypixels+ygap:
                 y0=(y0-ypixels-ygap)/binny+ypixels/binny+ygap
                 
             if y_start<=ypixels:
                 y_start=y_start/binny
-            if y_start>ypixels:
+            if y_start>ypixels and y_start<=ypixels+ygap:
+                dy=y_start-ypixels
+                y_start=(y_start-ypixels-dy)/binny+ypixels/binny+dy
+            if y_start>ypixels+ygap:
                 y_start=(y_start-ypixels-ygap)/binny+ypixels/binny+ygap
                 
         ##################################
         n_rows=obj_data.shape[1]
         xwidth=obj_data.shape[2]
+        #print o, xwidth
         
         xpix_ar=np.linspace(1,xwidth,xwidth)
         #fwhm_av=np.empty([n_exp])*np.nan

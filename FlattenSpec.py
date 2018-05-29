@@ -159,10 +159,6 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d
                             plt.show(block=False)
                             plt.close()
                     gaus_params[o,t,j,:]=np.empty([4])*np.nan
-                    if t==0:
-                        gaus_params[o,t,j,2]=ing_fwhm
-                    elif t>0:
-                        gaus_params[o,t,j,2]=gaus_params[o,t-1,j,2]
                     
                    
                 

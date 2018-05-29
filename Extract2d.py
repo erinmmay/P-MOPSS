@@ -143,10 +143,16 @@ def Extract2D(path,ex,SAVEPATH,binnx,binny,fb,Lflat,Ldark):
                     if fb==1:
                         if y0<=ypixels:
                             y0=y0/binny
-                        if y0>ypixels:
+                        if y0>ypixels and y0<=ypixels+ygap:
+                            dy=y0-ypixels
+                            y0=(y0-ypixels-dy)/binny+ypixels/binny+dy
+                        if y0>ypixels+ygap:
                             y0=(y0-ypixels-ygap)/binny+ypixels/binny+ygap
                         if ywid<=ypixels:
                             ywid=ywid/binny
+                        if ywid>ypixels and ywid<=ypixels+ygap:
+                            dy=ywid-ypixels
+                            ywid=(ywid-dy)/binny+dy
                         if ywid>ypixels:
                             ywid=(ywid-ygap)/binny+ygap
                         ########
@@ -160,7 +166,6 @@ def Extract2D(path,ex,SAVEPATH,binnx,binny,fb,Lflat,Ldark):
                             x0=(x0-3*xpixels-3*xgap)/binnx+3*xpixels/binnx+3*xgap
                         if xwid<xpixels:
                             xwid=xwid/binnx
-                    #print y0, ywid, x0, xwid
                     lowy=np.int(np.max([0,y0-ex]))
                     topy=np.int(np.min([2*ypixels/binny+ygap, y0+ywid+ex]))
                     lowx=np.int(np.max([0,x0]))
