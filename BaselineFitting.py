@@ -47,7 +47,7 @@ def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,noise
         bg=(model_inputs['white_bg']).reshape(-1,1)
         
         airmass=(np.load(SAVEPATH+'HeaderData.npz')['airmass']).reshape(-1,1)
-        median_fwhm=(np.load(SAVEPATH+'FlattenedSpectra.npz')['fwhm_av'])[0,:].reshape(-1,1)
+        median_fwhm=(np.load(SAVEPATH+'FlattenedSpectra.npz')['fwhm_ar'])[0,:].reshape(-1,1)
         ones=(np.ones(n_exp)).reshape(-1,1)
             
         time_fl=(np.copy(time0)).reshape(-1,1)
@@ -413,7 +413,7 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
             bg=((model_inputs['binned_bg'])[:,b]).reshape(-1,1)
 
             airmass=(np.load(SAVEPATH+'HeaderData.npz')['airmass']).reshape(-1,1)
-            median_fwhm=(np.load(SAVEPATH+'FlattenedSpectra.npz')['fwhm_av'])[0,:].reshape(-1,1)
+            median_fwhm=(np.load(SAVEPATH+'FlattenedSpectra.npz')['fwhm_ar'])[0,:].reshape(-1,1)
             ones=(np.ones(n_exp)).reshape(-1,1)
 
             time_fl=(np.copy(time0)).reshape(-1,1)

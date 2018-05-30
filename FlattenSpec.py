@@ -186,67 +186,101 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d
                     plt.show(block=False)
              
             ### correct within 1-a_s ##
-            for j in range(0,n_rows):
-                row_data=np.array(frame[j,:])
-                if j>ypixels and j<=ypixels+ygap:  # if in gap
-                    continue
-                if not np.isfinite(row_data[0]):    # nans bookend the data
-                    continue
-                if not np.isfinite(gaus_params[o,t,j,2]): #if selected as a 'bad' row
-                    continue
-                fwhm=ing_fwhm
-                reg_pix=np.append(xpix_ar[ed_l:int(gaus_params[o,t,j,1]-(a_d)*fwhm)],
-                                  xpix_ar[int(gaus_params[o,t,j,1]+(a_d)*fwhm):int(xwidth-ed_u)])
-                sub_g=row_data-Gaussian(xpix_ar,*gaus_params[o,t,j,:])
-                reg_dat_0=np.append(sub_g[ed_l:int(gaus_params[o,t,j,1]-(a_d)*fwhm)],
-                                  sub_g[int(gaus_params[o,t,j,1]+(a_d)*fwhm):int(xwidth-ed_u)])
-                c1=0
-                c2=0
-                c3=0
-                c1,reg_dat_1=outlierr_c(np.copy(reg_dat_0),ks_d,sig_d)
-                c2,reg_dat_2=outlierr_c(np.copy(reg_dat_1),ks_d,sig_d)
-                if trip==True:
-                    c3,reg_dat_3=outlierr_c(np.copy(reg_dat_2),ks_d,sig_d)
-                    reg_dat=np.copy(reg_dat_3)
-                    tr=c1+c2+c3
-                else:
-                    reg_dat=np.copy(reg_dat_2)
-                    tr=c1+c2
+            if data_corr==True:
+                for j in range(0,n_rows):
+                    row_data=np.array(frame[j,:])
+                    if j>ypixels and j<=ypixels+ygap:  # if in gap
+                        continue
+                    if not np.isfinite(row_data[0]):    # nans bookend the data
+                        continue
+                    if not np.isfinite(gaus_params[o,t,j,2]): #if selected as a 'bad' row
+                        continue
+                    fwhm=ing_fwhm
+                    sub_g=row_data-Gaussian(xpix_ar,*gaus_params[o,t,j,:])
 
-                reg_dat+=Gaussian(reg_pix,*gaus_params[o,t,j,:])
-                reg_dat_0+=Gaussian(reg_pix,*gaus_params[o,t,j,:])
-                reg_dat_1+=Gaussian(reg_pix,*gaus_params[o,t,j,:])
-                reg_dat_2+=Gaussian(reg_pix,*gaus_params[o,t,j,:])
-                if trip==True:
-                    reg_dat_3+=Gaussian(reg_pix,*gaus_params[o,t,j,:])
 
-                if ver==True:
-                    if tr>1:
-                        plt.figure(501,figsize=(14,4))
-                        plt.title('BAKGROUND FILTERING: OBJ='+str(int(o))+
-                                  ' TIME='+str(int(t))+' ROW='+str(np.round(100.*float(j)/float(n_rows),5))+'%')
-                        plt.plot(xpix_ar,row_data,color='black',linewidth=6.0,zorder=1)
-                        plt.plot(reg_pix,reg_dat_1,color='purple', linewidth=3.0,zorder=2)
-                        plt.plot(reg_pix,reg_dat_2,color='blue',linewidth=3.0,zorder=3)
-                        plt.figtext(0.15,0.7,c1,color='purple',fontsize=25)
-                        plt.figtext(0.15,0.5,c2,color='blue',fontsize=25)
-                        if trip==True:
-                            plt.plot(reg_pix,reg_dat_3,color='green',linewidth=3.0,zorder=4)
-                            plt.figtext(0.15,0.3,c3,color='green',fontsize=25)
-                        plt.plot(xpix_ar,Gaussian(xpix_ar,*gaus_params[o,t,j,:]),linewidth=1.0,color='red',zorder=5)
-                        plt.plot(reg_pix,Gaussian(reg_pix,*gaus_params[o,t,j,:]),linewidth=3.0,color='red',zorder=5)
-                        plt.axvline(x=int(gaus_params[o,t,j,1]+(a_d)*fwhm),color='grey',linewidth=0.5)
-                        plt.axvline(x=int(gaus_params[o,t,j,1]-(a_d)*fwhm),color='grey',linewidth=0.5)
-                        plt.axvline(x=int(gaus_params[o,t,j,1]+(a_s)*fwhm),color='grey',linewidth=1.5)
-                        plt.axvline(x=int(gaus_params[o,t,j,1]-(a_s)*fwhm),color='grey',linewidth=1.5)
-                        #plt.ylim(-100,100)
-                        plt.show(block=False)
-                        plt.close()
-                        
-                row_data[ed_l:int(gaus_params[o,t,j,1]-(a_d)*fwhm)]=reg_dat[:int(gaus_params[o,t,j,1]-(a_d)*fwhm)-ed_l]   
-                row_data[int(gaus_params[o,t,j,1]+(a_d)*fwhm):
-                         int(xwidth-ed_u)]=reg_dat[int(gaus_params[o,t,j,1]-(a_d)*fwhm)-ed_l:]  
-                frame[j,:]=row_data
+                    lowl=ed_l
+                    lowu=int(gaus_params[o,t,j,1]-(a_d)*fwhm)
+                    if lowu>=lowl:
+                        bp=xpix_ar[lowl:lowu]
+                        bd=sub_g[lowl:lowu]
+                    else:
+                        bp=np.array([])
+                        bp=np.array([])
+                    uppl=int(gaus_params[o,t,j,1]+(a_d)*fwhm)
+                    uppu=int(xwidth-ed_u)
+                    if uppu>=uppl:
+                        tp=xpix_ar[uppl:uppu]
+                        td=sub_g[uppl:uppu]
+                    else:
+                        tp=np.array([])
+                        td=np.array([])
+
+                    reg_pix=np.append(bp,tp)
+                    reg_dat_0=np.append(bd,td)
+
+                    c1=0
+                    c2=0
+                    c3=0
+                    c1,reg_dat_1=outlierr_c(np.copy(reg_dat_0),ks_d,sig_d)
+                    c2,reg_dat_2=outlierr_c(np.copy(reg_dat_1),ks_d,sig_d)
+                    if trip==True:
+                        c3,reg_dat_3=outlierr_c(np.copy(reg_dat_2),ks_d,sig_d)
+                        reg_dat=np.copy(reg_dat_3)
+                        tr=c1+c2+c3
+                    else:
+                        reg_dat=np.copy(reg_dat_2)
+                        tr=c1+c2
+
+                    reg_dat+=Gaussian(reg_pix,*gaus_params[o,t,j,:])
+                    reg_dat_0+=Gaussian(reg_pix,*gaus_params[o,t,j,:])
+                    reg_dat_1+=Gaussian(reg_pix,*gaus_params[o,t,j,:])
+                    reg_dat_2+=Gaussian(reg_pix,*gaus_params[o,t,j,:])
+                    if trip==True:
+                        reg_dat_3+=Gaussian(reg_pix,*gaus_params[o,t,j,:])
+
+                    if ver==True:
+                        if tr>1:
+                            plt.figure(501,figsize=(14,4))
+                            plt.title('BAKGROUND FILTERING: OBJ='+str(int(o))+
+                                      ' TIME='+str(int(t))+' ROW='+str(np.round(100.*float(j)/float(n_rows),5))+'%')
+                            plt.plot(xpix_ar,row_data,color='black',linewidth=6.0,zorder=1)
+                            plt.plot(reg_pix,reg_dat_1,color='purple', linewidth=3.0,zorder=2)
+                            plt.plot(reg_pix,reg_dat_2,color='blue',linewidth=3.0,zorder=3)
+                            plt.figtext(0.15,0.7,c1,color='purple',fontsize=25)
+                            plt.figtext(0.15,0.5,c2,color='blue',fontsize=25)
+                            if trip==True:
+                                plt.plot(reg_pix,reg_dat_3,color='green',linewidth=3.0,zorder=4)
+                                plt.figtext(0.15,0.3,c3,color='green',fontsize=25)
+                            plt.plot(xpix_ar,Gaussian(xpix_ar,*gaus_params[o,t,j,:]),linewidth=1.0,color='red',zorder=5)
+                            plt.plot(reg_pix,Gaussian(reg_pix,*gaus_params[o,t,j,:]),linewidth=3.0,color='red',zorder=5)
+                            if CON==False:
+                                plt.axvline(x=int(gaus_params[o,t,j,1]+(a_d)*fwhm),color='grey',linewidth=0.5)
+                                plt.axvline(x=int(gaus_params[o,t,j,1]-(a_d)*fwhm),color='grey',linewidth=0.5)
+                                plt.axvline(x=int(gaus_params[o,t,j,1]+(a_s)*fwhm),color='grey',linewidth=1.5)
+                                plt.axvline(x=int(gaus_params[o,t,j,1]-(a_s)*fwhm),color='grey',linewidth=1.5)
+                                #plt.ylim(-100,100)
+                            if CON==True:
+                                plt.axvline(x=int(gaus_params[o,t,j,1]+(a_d)*ing_fwhm),color='grey',linewidth=0.5)
+                                plt.axvline(x=int(gaus_params[o,t,j,1]-(a_d)*ing_fwhm),color='grey',linewidth=0.5)
+                                plt.axvline(x=int(gaus_params[o,t,j,1]+(a_s)*ing_fwhm),color='grey',linewidth=1.5)
+                                plt.axvline(x=int(gaus_params[o,t,j,1]-(a_s)*ing_fwhm),color='grey',linewidth=1.5)
+                                #plt.ylim(-100,100)
+                            plt.show(block=False)
+                            plt.close()
+
+
+                    if lowu>=lowl:
+                        if uppu<uppl:
+                            row_data[lowl:lowu]=reg_dat
+                        else:
+                            row_data[lowl:lowu]=reg_dat[:lowu-lowl] 
+                    if uppu>=uppl:
+                        if lowu<lowl:
+                            row_data[uppl:uppu]=reg_dat 
+                        else:
+                            row_data[uppl:uppu]=reg_dat[lowu-lowl:] 
+                    frame[j,:]=row_data
 
             
             ### save data to X-align
@@ -301,17 +335,28 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d
                     fig,ax=plt.subplots(2,1,figsize=(15,4))
                     fig.subplots_adjust(wspace=0, hspace=0)
                     ax[0].imshow((obj_data[t,:,:].T),cmap=plt.cm.plasma,aspect='auto')
-                    ax[0].plot(gaus_params[o,t,:,1]-a_s*fwhm_data[o,t],color='white',linewidth=1.0)
-                    ax[0].plot(gaus_params[o,t,:,1]+a_s*fwhm_data[o,t],color='white',linewidth=1.0)
-                    ax[0].plot(gaus_params[o,t,:,1],color='white',linewidth=0.5,alpha=0.6)
+                    if CON==False:
+                        ax[0].plot(gaus_params[o,t,:,1]-a_s*fwhm_data[o,t],color='white',linewidth=1.0)
+                        ax[0].plot(gaus_params[o,t,:,1]+a_s*fwhm_data[o,t],color='white',linewidth=1.0)
+                        ax[0].plot(gaus_params[o,t,:,1],color='white',linewidth=0.5,alpha=0.6)
+                    if CON==True:
+                        ax[0].plot(gaus_params[o,t,:,1]-a_s*ing_fwhm,color='white',linewidth=1.0)
+                        ax[0].plot(gaus_params[o,t,:,1]+a_s*ing_fwhm,color='white',linewidth=1.0)
+                        ax[0].plot(gaus_params[o,t,:,1],color='white',linewidth=0.5,alpha=0.6)
                     #ax[0].set_ylim(100/binnx-3*a_s*fwhm_data[o,t],100/binnx+3*a_s*fwhm_data[o,t])
                     ax[0].set_xticklabels([])
                     ax[1].imshow((Xalign_data[o,t,:,:].T),cmap=plt.cm.plasma,aspect='auto')
                     ax[1].set_xlim(y_start,obj_data.shape[1]+y_start)
-                    ax[1].axhline(y=(50)/binnx+1-a_s*fwhm_data[o,t],color='white',linewidth=1.0)
-                    ax[1].axhline(y=(50)/binnx+1+a_s*fwhm_data[o,t],color='white',linewidth=1.0)
-                    ax[1].axhline(y=(50)/binnx+1,color='white',linewidth=0.5,alpha=0.6)
-                    ax[1].set_ylim((50)/binnx+1-2*a_s*fwhm_data[o,t],(50)/binnx+1+2*a_s*fwhm_data[o,t])
+                    if CON==False:
+                        ax[1].axhline(y=(50)/binnx+1-a_s*fwhm_data[o,t],color='white',linewidth=1.0)
+                        ax[1].axhline(y=(50)/binnx+1+a_s*fwhm_data[o,t],color='white',linewidth=1.0)
+                        ax[1].axhline(y=(50)/binnx+1,color='white',linewidth=0.5,alpha=0.6)
+                        ax[1].set_ylim((50)/binnx+1-2*a_s*fwhm_data[o,t],(50)/binnx+1+2*a_s*fwhm_data[o,t])
+                    if CON==True:
+                        ax[1].axhline(y=(50)/binnx+1-a_s*ing_fwhm,color='white',linewidth=1.0)
+                        ax[1].axhline(y=(50)/binnx+1+a_s*ing_fwhm,color='white',linewidth=1.0)
+                        ax[1].axhline(y=(50)/binnx+1,color='white',linewidth=0.5,alpha=0.6)
+                        ax[1].set_ylim((50)/binnx+1-2*a_s*ing_fwhm,(50)/binnx+1+2*a_s*ing_fwhm)
                     ax[1].set_xticklabels([])
                     plt.figtext(0.15,0.70,t,color='grey',fontsize=30)
                     plt.show(block=False)

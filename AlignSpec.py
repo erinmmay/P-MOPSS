@@ -34,8 +34,10 @@ def AlignSpec(gris,osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex
     ovs_data=np.empty([n_obj,n_exp,int(osr*n_pix)])*np.nan
     int_data=np.empty([n_obj,n_exp,n_pix])*np.nan
 
-    pix_ar=np.linspace(n_pix-1,0,n_pix)
-    pix_ar_os=np.linspace(n_pix-1,0,int(osr*n_pix))
+    pix_ar=np.linspace(0,n_pix-1,n_pix)
+    pix_ar_os=np.linspace(0,n_pix-1,int(osr*n_pix))
+    y_orig=np.copy(pix_ar)
+    y_orig_os=np.copy(pix_ar_os)
 #     print pix_ar
 #     print (n_pix-ygap)/2, n_pix
 #     print ypixels, 2*ypixels+ygap
@@ -43,32 +45,12 @@ def AlignSpec(gris,osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex
     if binny>1:
         pix_ar=bin_y_shift(pix_ar,binny)
         pix_ar_os=bin_y_shift(pix_ar_os,binny)
-#     if binn>1:
-#         for p in range(0,len(pix_ar)):
-#             if pix_ar[p]<=ypixels/float(binn):
-#                 pix_ar[p]=pix_ar[p]*float(binn)
-#             else:
-#                 pix_ar[p]= (pix_ar[p]-ygap-ypixels/float(binn))*float(binn)+ypixels+ygap
-#         for p in range(0,len(pix_ar_os)):
-#             if pix_ar_os[p]<=ypixels/float(binn):
-#                 pix_ar_os[p]=pix_ar_os[p]*float(binn)
-#             else:
-#                 pix_ar_os[p]= (pix_ar_os[p]-ygap-ypixels/float(binn))*float(binn)+ypixels+ygap
-#         plt.figure(201,figsize=(8,6))
-#         plt.plot(pix_ar,'.',color='black')
-#         plt.axhline(y=ypixels)
-#         plt.axhline(y=ypixels+ygap)
-#         plt.axvline(x=ypixels/binn)
-#         plt.axvline(x=ypixels/binn+ygap)
-#         plt.show(block=False)
-#         plt.figure(202,figsize=(8,6))
-#         plt.plot(pix_ar_os,'.',color='blue')
-#         plt.axhline(y=ypixels)
-#         plt.axhline(y=ypixels+ygap)
-#         plt.axvline(x=osr*(ypixels/binn))
-#         plt.axvline(x=osr*(ypixels/binn+ygap))
-#         plt.show(block=False)
-#     print pix_ar      
+
+       
+    print pix_ar
+    pix_ar=np.flip(pix_ar,axis=0)
+    pix_ar_os=np.flip(pix_ar_os,axis=0)
+    print pix_ar
     
     shift_pixels=np.empty([n_obj,n_exp,n_pix])*np.nan
     wav_ar=np.empty([n_obj,n_exp,n_pix])*np.nan
