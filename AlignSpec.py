@@ -21,7 +21,8 @@ from setup import *
 def func_gaus(x,sigma):
     return 1.0-np.exp(-(1./2.)*(x/(sigma))**2.)
 
-def AlignSpec(gris,osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex,binny,ver,ver_l,time_trim,skip):
+def AlignSpec(gris,osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,
+              ex,binny,ver,ver_l,time_trim,skip):
     masks=np.load(SAVEPATH+'FinalMasks.npz')['masks']
 
     input_data=np.load(SAVEPATH+'FlattenedSpectra.npz')['flat_spec']
@@ -96,7 +97,9 @@ def AlignSpec(gris,osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,ex
         
         print ' --Filtering...'
         tc=0
-        for t in range(0+2,n_exp-2-time_trim):
+        for t in range(0,n_exp-time_trim):
+            counter,input_data[o,t,:]=outlierr_c(np.copy(input_data[o,t,:]),ks,olv)
+            tc+=counter
             counter,input_data[o,t,:]=outlierr_c(np.copy(input_data[o,t,:]),ks,olv)
             tc+=counter
 

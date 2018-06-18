@@ -307,7 +307,7 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d
                     Xalign_data[o,t,j,:]=row_data[int(gaus_params[o,t,j,1])-(50/binnx)-1:int(gaus_params[o,t,j,1])+50/binnx]
             
             if CON==False:
-                fwhm_data[o,t]=math.ceil(np.nanmedian(gaus_params[o,t,:,2]))
+                fwhm_data[o,t]=np.nanmedian(gaus_params[o,t,:,2])
             
             if ver_full==True:
                 norm=matplotlib.colors.Normalize(vmin=0,vmax=n_rows)
@@ -363,12 +363,17 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d
                     plt.close()
                     
         if CON==True:
-            fwhm_data[o,:]=math.ceil(np.nanmedian(gaus_params[o,:,:,2]))
+            fwhm_data[o,:]=np.nanmedian(gaus_params[o,:,:,2])
         
         
         ### flatten spectra ####
         rm_s=0
-        flat_spec[o,:,:]=np.nansum(Xalign_data[o,:,:,:],axis=2)
+        #[n_obj,n_exp,2*ypixels/binny+ygap,100/binnx+1]
+        for t in range(0,n_exp):
+            for j in range(0,n_rows):
+                sz=a_s*math.ceil(fwhm_data[o,t])
+                flat_spec[o,t,j]=np.nansum(
+                    Xalign_data[o,t,j,int(50/binnx+1-sz):int(50/binnx+1+sz)])
         for t in range(0,n_exp):
             rm_s_a,flat_spec[o,t,:]=outlierr_c(np.copy(flat_spec[o,t,:]),ks_s,sig_s)
             rm_s+=rm_s_a

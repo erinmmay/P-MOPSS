@@ -11,7 +11,7 @@ from outlier_removal import outlierr
 
 from setup import *
 
-def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,noise_red,h_o_t,see_t):
+def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,noise_red,h_o_t,see_t,time_skip):
 
     order=order
     low=olow
@@ -30,7 +30,10 @@ def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,noise
         LC=np.load(SAVEPATH+'LCwhite.npz')['data']
         err_t=np.load(SAVEPATH+'LCwhite.npz')['err_t']
         err_p=np.load(SAVEPATH+'LCwhite.npz')['err_p']
-        
+     
+    for t in range(0,len(time0)):
+        if t<time_skip:
+            LC[t]=np.nan
         
     if noise_red==True:
         n_exp=len(time0)
@@ -111,14 +114,16 @@ def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,noise
         plt.show()
         
         
-    for f in range(0,len(LC)):
-        if LC[f]<low or LC[f]>high or np.isfinite(LC[f])==False:
-            if f>1 and f<len(LC)-1:
-                LC[f]=np.nanmedian(np.append(LC[f-1],LC[f+1]))
-            elif f==0:
-                LC[f]=LC[f+1]
-            elif f==len(LC)-1:
-                LC[f]=LC[f-1]
+#     for f in range(0,len(LC)):
+#         if LC[f]<low or LC[f]>high or np.isfinite(LC[f])==False:
+#             if f>1 and f<len(LC)-1:
+#                 LC[f]=np.nanmedian(np.append(LC[f-1],LC[f+1]))
+#             elif f==0:
+#                 LC[f]=LC[f+1]
+#             elif f==len(LC)-1:
+#                 LC[f]=LC[f-1]
+                
+    LC=outlierr(LC,5,3)
         
     z=avg
     oot_t0=np.empty([len(time0)/z])
@@ -271,15 +276,16 @@ def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,noise
     
     if corr==True:
         np.savez_compressed(SAVEPATH+'LCwhite_br_Corr.npz',data=new,time=time0,rmse=RMSE_est,
-                            rmse_orig=RMSE_est_orig,nm=noise_model_fit,
+                            rmse_orig=RMSE_est_orig,nm=noise_model_fit,polyfit=out,
                             err_t=err_t,err_p=err_p,avt=oot_t0,avf=oot_F0/out0,beta=beta_arr)
     else:
         np.savez_compressed(SAVEPATH+'LCwhite_br.npz',data=new,time=time0,rmse=RMSE_est,
-                            rmse_orig=RMSE_est_orig,nm=noise_model_fit,
+                            rmse_orig=RMSE_est_orig,nm=noise_model_fit,polyfit=out,
                             err_t=err_t,err_p=err_p,avt=oot_t0,avf=oot_F0/out0,beta=beta_arr)
 
         
-def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,noise_white,noise_red,h_o_t,see_t,spot):
+def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,
+                corr,noise_white,noise_red,h_o_t,see_t,spot,time_skip):
 
     order=order
     low=olow
@@ -310,6 +316,10 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
     bin_arr=np.append(bin_arr,[bin_arr[-1]+width,bin_arr[-1]+2*width])
     print bin_arr
     
+    for t in range(0,len(time0)):
+        if t<time_skip:
+            LC_l[t,:]=np.nan
+    
     if noise_white==True:
         if spot==True:
             lc_fitw=np.load(SAVEPATH+'Fits_'+str(int(width))
@@ -321,7 +331,7 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
                                 +'/LightCurve_fits_white.npz')['lightcurve_fit']
             white_residuals=np.load(SAVEPATH+'Fits_'+str(int(width))
                                 +'/LightCurve_fits_white.npz')['residuals']*10**-6
-        lc_dataw_corr=lc_fitw-white_residuals
+        lc_dataw_corr=np.load(SAVEPATH+'LCwhite_br.npz')['data']#lc_fitw-white_residuals
         if corr==True:
             lc_dataw=np.load(SAVEPATH+'LCwhite_Corr.npz')['data']
         else:
@@ -369,6 +379,8 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
     RMSE_est=np.empty([len(bin_ctr)])*np.nan
     RMSE_est_orig=np.empty([len(bin_ctr)])*np.nan
     
+    polyfit=np.empty([len(time0),len(bin_ctr)])*np.nan
+    
     
     if h_o_t==True and see_t==True:
         beta_arr=np.empty([LC_l.shape[1],9])
@@ -386,14 +398,16 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
         if np.isnan(LC_l[int(n_exp/2),b])==True:# or np.isnan(LC_l[1,b])==True or np.isnan(LC_l[2,b])==True:
             print '---------', bin_ctr[b],'---------'
             continue
-        for f in range(0,LC_l.shape[0]):
-            if LC_l[f,b]<low or LC_l[f,b]>high or np.isfinite(LC_l[f,b])==False:
-                if f>1 and f<LC_l.shape[0]-1:
-                    LC_l[f,b]=np.nanmedian(np.append(LC_l[f-1,b],LC_l[f+1,b]))
-                if f==0:
-                    LC_l[f,b]=LC_l[f+1,b]
-                if f==LC_l.shape[0]-1:
-                    LC_l[f,b]=LC_l[f-1,b]
+#         for f in range(0,LC_l.shape[0]):
+#             if LC_l[f,b]<low or LC_l[f,b]>high or np.isfinite(LC_l[f,b])==False:
+#                 if f>1 and f<LC_l.shape[0]-1:
+#                     LC_l[f,b]=np.nanmedian(np.append(LC_l[f-1,b],LC_l[f+1,b]))
+#                 if f==0:
+#                     LC_l[f,b]=LC_l[f+1,b]
+#                 if f==LC_l.shape[0]-1:
+#                     LC_l[f,b]=LC_l[f-1,b]
+                    
+        LC_l[:,b]=outlierr(LC_l[:,b],5,3)
      
         LCb=LC_l[:,b]
         
@@ -462,6 +476,8 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
         new[:,b]=(LCb)/out
     
         avgF[:,b]=oot_F0/out0
+        
+        polyfit[:,b]=out
         
         if noise_red==True:
             X_arr=model_stack_oott
@@ -626,10 +642,10 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr
     if corr==True:
         np.savez_compressed(SAVEPATH+'LC_bins_br_'+str(int(width))+'_Corr.npz',
                             data=new,nm=nm,cw=common_white,time=time0,rmse=RMSE_est,
-                            rmse_orig=RMSE_est_orig,bin_ctr=bin_ctr,
+                            rmse_orig=RMSE_est_orig,bin_ctr=bin_ctr,polyfit=polyfit,
                             err_t=err_t,err_p=err_p,avt=oot_t0,avf=avgF,beta=beta_arr)
     else:
         np.savez_compressed(SAVEPATH+'LC_bins_br_'+str(int(width))+'.npz',
                             data=new,nm=nm,cw=common_white,time=time0,rmse=RMSE_est,
-                            rmse_orig=RMSE_est_orig,bin_ctr=bin_ctr,
+                            rmse_orig=RMSE_est_orig,bin_ctr=bin_ctr,polyfit=polyfit,
                             err_t=err_t,err_p=err_p,avt=oot_t0,avf=avgF,beta=beta_arr)
