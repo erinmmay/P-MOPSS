@@ -322,15 +322,11 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,
     
     if noise_white==True:
         if spot==True:
-            lc_fitw=np.load(SAVEPATH+'Fits_'+str(int(width))
-                                +'/LightCurve_fits_spot.npz')['lightcurve_fit']
-            white_residuals=np.load(SAVEPATH+'Fits_'+str(int(width))
-                                +'/LightCurve_fits_spot.npz')['residuals']*10**-6
+            lc_fitw=np.load(SAVEPATH+'/LightCurve_fits_spot.npz')['lightcurve_fit']
+            white_residuals=np.load(SAVEPATH+'LightCurve_fits_spot.npz')['residuals']*10**-6
         else:
-            lc_fitw=np.load(SAVEPATH+'Fits_'+str(int(width))
-                                +'/LightCurve_fits_white.npz')['lightcurve_fit']
-            white_residuals=np.load(SAVEPATH+'Fits_'+str(int(width))
-                                +'/LightCurve_fits_white.npz')['residuals']*10**-6
+            lc_fitw=np.load(SAVEPATH+'LightCurve_fits_white.npz')['lightcurve_fit']
+            white_residuals=np.load(SAVEPATH+'LightCurve_fits_white.npz')['residuals']*10**-6
         lc_dataw_corr=np.load(SAVEPATH+'LCwhite_br.npz')['data']#lc_fitw-white_residuals
         if corr==True:
             lc_dataw=np.load(SAVEPATH+'LCwhite_Corr.npz')['data']
