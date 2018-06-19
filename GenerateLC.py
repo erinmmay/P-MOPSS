@@ -22,7 +22,9 @@ def LCgen_white(SAVEPATH,corr,Cals_ind,csn):
     n_exp=len(time0)
          
         
-
+    print Data.shape
+    #object, time, bin
+    #old: time, bin, object
 #W52- 2,3,5,7,8
     #Cals_ind=np.array([2,3,5,8])
     #csn=2
@@ -31,17 +33,17 @@ def LCgen_white(SAVEPATH,corr,Cals_ind,csn):
     csn=csn
     
     if len(Cals_ind)==0:
-        Cals=np.ones_like(Data[:,0,0])
-        errs_cw_t=np.zeros_like(Data[:,0,0])
-        errs_cw_p=np.zeros_like(Data[:,0,0])
+        Cals=np.ones_like(Data[0,:,0])
+        errs_cw_t=np.zeros_like(Data[0,:,0])
+        errs_cw_p=np.zeros_like(Data[0,:,0])
     else:
-        Cals=np.zeros_like(Data[:,0,0])
-        errs_cw_t=np.zeros_like(Data[:,0,0])
-        errs_cw_p=np.zeros_like(Data[:,0,0])
+        Cals=np.zeros_like(Data[0,:,0])
+        errs_cw_t=np.zeros_like(Data[0,:,0])
+        errs_cw_p=np.zeros_like(Data[0,:,0])
         for c in Cals_ind:
-            Cals=(np.nansum([Cals,Data[:,0,c]],axis=0))
-            errs_cw_t=np.sqrt(np.nansum([errs_cw_t,errsw_t[:,0,c]**2.],axis=0))
-            errs_cw_p=np.sqrt(np.nansum([errs_cw_p,errsw_p[:,0,c]**2.],axis=0))
+            Cals=(np.nansum([Cals,Data[c,:,0]],axis=0))
+            errs_cw_t=np.sqrt(np.nansum([errs_cw_t,errsw_t[c,:,0]**2.],axis=0))
+            errs_cw_p=np.sqrt(np.nansum([errs_cw_p,errsw_p[c,:,0]**2.],axis=0))
 
 
     errs_cw_t/=np.nanmean(Cals)
@@ -50,14 +52,14 @@ def LCgen_white(SAVEPATH,corr,Cals_ind,csn):
 
     Cals=Cals/np.nanmean(Cals)
 
-    LC=(Data[:,0,0]/Cals)
-    CS=(Data[:,0,csn]/Cals)
+    LC=(Data[0,:,0]/Cals)
+    CS=(Data[csn,:,0]/Cals)
 
-    errs_w_t=np.sqrt(np.nansum([(errsw_t[:,0,0]/Data[:,0,0])**2.,(errs_cw_t/Cals)**2.],axis=0))*LC
-    errs_w_p=np.sqrt(np.nansum([(errsw_p[:,0,0]/Data[:,0,0])**2.,(errs_cw_p/Cals)**2.],axis=0))*LC
+    errs_w_t=np.sqrt(np.nansum([(errsw_t[0,:,0]/Data[0,:,0])**2.,(errs_cw_t/Cals)**2.],axis=0))*LC
+    errs_w_p=np.sqrt(np.nansum([(errsw_p[0,:,0]/Data[0,:,0])**2.,(errs_cw_p/Cals)**2.],axis=0))*LC
 
-    errs_cs_t=np.sqrt(np.nansum([(errsw_t[:,0,0]/Data[:,0,csn])**2.,(errs_cw_t/Cals)**2.],axis=0))*CS
-    errs_cs_p=np.sqrt(np.nansum([(errsw_p[:,0,0]/Data[:,0,csn])**2.,(errs_cw_p/Cals)**2.],axis=0))*CS
+    errs_cs_t=np.sqrt(np.nansum([(errsw_t[0,:,0]/Data[csn,:,0])**2.,(errs_cw_t/Cals)**2.],axis=0))*CS
+    errs_cs_p=np.sqrt(np.nansum([(errsw_p[0,:,0]/Data[csn,:,0])**2.,(errs_cw_p/Cals)**2.],axis=0))*CS
 
     errs_w_t/=np.nanmean(LC[0:20])
     errs_w_p/=np.nanmean(LC[0:20])
@@ -159,7 +161,7 @@ def LCgen_binns(SAVEPATH,width,corr,Cals_ind,csn):
     scal_m=matplotlib.cm.ScalarMappable(cmap=colors,norm=norm)
     scal_m.set_array([])
 
-    Cals_l=np.empty([Datal.shape[0],Datal.shape[1]])*0.0
+    Cals_l=np.empty([Datal.shape[1],Datal.shape[2]])*0.0
     LC_l=np.zeros_like(Cals_l)
     CS_l=np.zeros_like(Cals_l)
     errs_cl_t=np.zeros_like(Cals_l)
@@ -172,18 +174,19 @@ def LCgen_binns(SAVEPATH,width,corr,Cals_ind,csn):
     errs_lcd_l_p=np.zeros_like(Cals_l)
     LC_d=np.zeros_like(Cals_l)
 
-
-    Cals_l=np.zeros_like(Datal[:,:,0])
-    errs_cl_t=np.zeros_like(Datal[:,:,0])
-    errs_cl_p=np.zeros_like(Datal[:,:,0])
-    for b in range(0,Datal.shape[1]):
+    print Datal.shape
+    
+    Cals_l=np.zeros_like(Datal[0,:,:])
+    errs_cl_t=np.zeros_like(Datal[0,:,:])
+    errs_cl_p=np.zeros_like(Datal[0,:,:])
+    for b in range(0,Datal.shape[2]):
         if len(Cals_ind)==0:
-            Cals_l[:,b]=np.ones_like(Datal[:,0,0])
+            Cals_l[:,b]=np.ones_like(Datal[0,:,0])
         else:
             for c in Cals_ind:
-                Cals_l[:,b]=(np.nansum([Cals_l[:,b],Datal[:,b,c]],axis=0))
-                errs_cl_t[:,b]=np.sqrt(np.nansum([errs_cl_t[:,b],errs_t[:,b,c]**2.],axis=0))
-                errs_cl_p[:,b]=np.sqrt(np.nansum([errs_cl_p[:,b],errs_p[:,b,c]**2.],axis=0))
+                Cals_l[:,b]=(np.nansum([Cals_l[:,b],Datal[c,:,b]],axis=0))
+                errs_cl_t[:,b]=np.sqrt(np.nansum([errs_cl_t[:,b],errs_t[c,:,b]**2.],axis=0))
+                errs_cl_p[:,b]=np.sqrt(np.nansum([errs_cl_p[:,b],errs_p[c,:,b]**2.],axis=0))
 
         errs_cl_t/=np.nanmean(Cals_l[:,b])
         errs_cl_p/=np.nanmean(Cals_l[:,b])
@@ -192,14 +195,14 @@ def LCgen_binns(SAVEPATH,width,corr,Cals_ind,csn):
     
     ###
     
-        LC_l[:,b]=(Datal[:,b,0]/Cals_l[:,b])
-        CS_l[:,b]=(Datal[:,b,csn]/Cals_l[:,b])
+        LC_l[:,b]=(Datal[0,:,b]/Cals_l[:,b])
+        CS_l[:,b]=(Datal[csn,:,b]/Cals_l[:,b])
         
-        errs_l_t[:,b]=np.sqrt(np.nansum([(errs_t[:,b,0]/Datal[:,b,0])**2.,(errs_cl_t[:,b]/Cals_l[:,b])**2.],axis=0))*LC_l[:,b]
-        errs_l_p[:,b]=np.sqrt(np.nansum([(errs_p[:,b,0]/Datal[:,b,0])**2.,(errs_cl_p[:,b]/Cals_l[:,b])**2.],axis=0))*LC_l[:,b]
+        errs_l_t[:,b]=np.sqrt(np.nansum([(errs_t[0,:,b]/Datal[0,:,b])**2.,(errs_cl_t[:,b]/Cals_l[:,b])**2.],axis=0))*LC_l[:,b]
+        errs_l_p[:,b]=np.sqrt(np.nansum([(errs_p[0,:,b]/Datal[0,:,b])**2.,(errs_cl_p[:,b]/Cals_l[:,b])**2.],axis=0))*LC_l[:,b]
     
-        errs_cs_l_t[:,b]=np.sqrt(np.nansum([(errs_t[:,b,0]/Datal[:,b,csn])**2.,(errs_cl_t[:,b]/Cals_l[:,b])**2.],axis=0))*LC_l[:,b]
-        errs_cs_l_p[:,b]=np.sqrt(np.nansum([(errs_p[:,b,0]/Datal[:,b,csn])**2.,(errs_cl_p[:,b]/Cals_l[:,b])**2.],axis=0))*LC_l[:,b]
+        errs_cs_l_t[:,b]=np.sqrt(np.nansum([(errs_t[0,:,b]/Datal[csn,:,b])**2.,(errs_cl_t[:,b]/Cals_l[:,b])**2.],axis=0))*LC_l[:,b]
+        errs_cs_l_p[:,b]=np.sqrt(np.nansum([(errs_p[0,:,b]/Datal[csn,:,b])**2.,(errs_cl_p[:,b]/Cals_l[:,b])**2.],axis=0))*LC_l[:,b]
     
         errs_l_t[:,b]/=np.nanmean(LC_l[0:20,b])
         errs_l_p[:,b]/=np.nanmean(LC_l[0:20,b])
