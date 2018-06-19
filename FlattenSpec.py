@@ -67,6 +67,7 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d
     Xalign_data=np.empty([n_obj,n_exp,2*ypixels/binny+ygap,100/binnx+1])*np.nan
     fwhm_data=np.empty([n_obj,n_exp])
     flat_spec=np.empty([n_obj,n_exp,2*ypixels/binny+ygap])*np.nan
+    flat_bkgd=np.empty([n_obj,n_exp,2*ypixels/binny+ygap])*np.nan
     
     for o in range(0,n_obj):
         if o in obj_skip:
@@ -89,6 +90,8 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d
         mask=(np.load(SAVEPATH+'FinalMasks.npz')['masks'])[o,:]
         print '      (done)'
                    
+        print ' ----> loading bkgdn...'
+        bkgd=(np.load(SAVEPATH+'BG_SUBTRACTION_'+str(int(o))+'.npz')['bkgd'])
         
         y0=int(mask[1])  #pixel number of inital extraction
         #y_start=np.int(np.max([0,y0-extray]))  #including extray
@@ -120,13 +123,13 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d
             if t%10==0:
                 print '       *** TIME: ',t,' ***'
             
-            frame=np.array(obj_data[t,:,:])   #current frame
+            frame=np.copy(obj_data[t,:,:])   #current frame
             
             #begin loop over pixels
             bad=0
             for j in range(0,n_rows):
                 #print j, y_start, n_rows, j+y_start, 2*ypixels+ygap
-                row_data=np.array(frame[j,:])
+                row_data=np.copy(frame[j,:])
                 if j>ypixels and j<=ypixels+ygap:  # if in gap
                     continue
                 if not np.isfinite(row_data[0]):    # nans bookend the data
@@ -281,30 +284,33 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d
                         else:
                             row_data[uppl:uppu]=reg_dat[lowu-lowl:] 
                     frame[j,:]=row_data
-
+            obj_data[t,:,:]=frame
+            ###############################################
+            ### REMOVED X-ALIGN PART - TOO MANY BUGS!!! ###
+            ###############################################
             
-            ### save data to X-align
-            for j in range(0,n_rows):
-                row_data=np.array(frame[j,:])
-                if j>ypixels and j<=ypixels+ygap:  # if in gap
-                    continue
-                if not np.isfinite(row_data[0]):
-                    continue
-                #print (gaus_params[o,t,j+y_start,1]), int(gaus_params[o,t,j+y_start,1])
-                #print int(gaus_params[o,t,j+y_start,1])-51, int(gaus_params[o,t,j+y_start,1])+51
-#                 if np.isfinite(gaus_params[o,t,j,1])==False:
-#                     gaus_params[o,t,j,1]=gaus_params[o,t,j-1,1]              
-                #print o, t, j, gaus_params[o,t,j,:]
-#                 if int(gaus_params[o,t,j,1])<=51:
-#                     print len(row_data), int(gaus_params[o,t,j,1])
-#                     arr=row_data[0:int(gaus_params[o,t,j,1])+50/binnx]
-#                     Xalign_data[o,t,j,:(100/binnx+1-len(arr))]=arr
-#                 if int(gaus_params[o,t,j,1])>len(row_data)-50:
-#                     print len(row_data),int(gaus_params[o,t,j,1])
-#                     arr=row_data[int(gaus_params[o,t,j,1])-(50/binnx)-1:]
-#                     Xalign_data[o,t,j,(100/binnx+1-len(arr)):]=arr
-                else:
-                    Xalign_data[o,t,j,:]=row_data[int(gaus_params[o,t,j,1])-(50/binnx)-1:int(gaus_params[o,t,j,1])+50/binnx]
+#             ### save data to X-align
+#             for j in range(0,n_rows):
+#                 row_data=np.array(frame[j,:])
+#                 if j>ypixels and j<=ypixels+ygap:  # if in gap
+#                     continue
+#                 if not np.isfinite(row_data[0]):
+#                     continue
+#                 #print (gaus_params[o,t,j+y_start,1]), int(gaus_params[o,t,j+y_start,1])
+#                 #print int(gaus_params[o,t,j+y_start,1])-51, int(gaus_params[o,t,j+y_start,1])+51
+# #                 if np.isfinite(gaus_params[o,t,j,1])==False:
+# #                     gaus_params[o,t,j,1]=gaus_params[o,t,j-1,1]              
+#                 #print o, t, j, gaus_params[o,t,j,:]
+# #                 if int(gaus_params[o,t,j,1])<=51:
+# #                     print len(row_data), int(gaus_params[o,t,j,1])
+# #                     arr=row_data[0:int(gaus_params[o,t,j,1])+50/binnx]
+# #                     Xalign_data[o,t,j,:(100/binnx+1-len(arr))]=arr
+# #                 if int(gaus_params[o,t,j,1])>len(row_data)-50:
+# #                     print len(row_data),int(gaus_params[o,t,j,1])
+# #                     arr=row_data[int(gaus_params[o,t,j,1])-(50/binnx)-1:]
+# #                     Xalign_data[o,t,j,(100/binnx+1-len(arr)):]=arr
+#                 else:
+#                     Xalign_data[o,t,j,:]=row_data[int(gaus_params[o,t,j,1])-(50/binnx)-1:int(gaus_params[o,t,j,1])+50/binnx]
             
             if CON==False:
                 fwhm_data[o,t]=np.nanmedian(gaus_params[o,t,:,2])
@@ -330,11 +336,13 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d
                 plt.show(block=False)
                 plt.close()
             
+            #ver_a just plots a zoomed in version now
             if ver_a==True:
                 if t%10==0:
                     fig,ax=plt.subplots(2,1,figsize=(15,4))
                     fig.subplots_adjust(wspace=0, hspace=0)
                     ax[0].imshow((obj_data[t,:,:].T),cmap=plt.cm.plasma,aspect='auto')
+                    ax[0].set_ylim(0,obj_data.shape[2])
                     if CON==False:
                         ax[0].plot(gaus_params[o,t,:,1]-a_s*fwhm_data[o,t],color='white',linewidth=1.0)
                         ax[0].plot(gaus_params[o,t,:,1]+a_s*fwhm_data[o,t],color='white',linewidth=1.0)
@@ -345,18 +353,30 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d
                         ax[0].plot(gaus_params[o,t,:,1],color='white',linewidth=0.5,alpha=0.6)
                     #ax[0].set_ylim(100/binnx-3*a_s*fwhm_data[o,t],100/binnx+3*a_s*fwhm_data[o,t])
                     ax[0].set_xticklabels([])
-                    ax[1].imshow((Xalign_data[o,t,:,:].T),cmap=plt.cm.plasma,aspect='auto')
-                    ax[1].set_xlim(y_start,obj_data.shape[1]+y_start)
+#                     ax[1].imshow((Xalign_data[o,t,:,:].T),cmap=plt.cm.plasma,aspect='auto')
+#                     ax[1].set_xlim(y_start,obj_data.shape[1]+y_start)
+#                     if CON==False:
+#                         ax[1].axhline(y=(50)/binnx+1-a_s*fwhm_data[o,t],color='white',linewidth=1.0)
+#                         ax[1].axhline(y=(50)/binnx+1+a_s*fwhm_data[o,t],color='white',linewidth=1.0)
+#                         ax[1].axhline(y=(50)/binnx+1,color='white',linewidth=0.5,alpha=0.6)
+#                         ax[1].set_ylim((50)/binnx+1-2*a_s*fwhm_data[o,t],(50)/binnx+1+2*a_s*fwhm_data[o,t])
+#                     if CON==True:
+#                         ax[1].axhline(y=(50)/binnx+1-a_s*ing_fwhm,color='white',linewidth=1.0)
+#                         ax[1].axhline(y=(50)/binnx+1+a_s*ing_fwhm,color='white',linewidth=1.0)
+#                         ax[1].axhline(y=(50)/binnx+1,color='white',linewidth=0.5,alpha=0.6)
+#                         ax[1].set_ylim((50)/binnx+1-2*a_s*ing_fwhm,(50)/binnx+1+2*a_s*ing_fwhm)
+#                     ax[1].set_xticklabels([])
+                    ax[1].imshow((obj_data[t,:,:].T),cmap=plt.cm.plasma,aspect='auto')
+                    ax[1].set_ylim(np.nanmin(gaus_params[o,t,:,1])-(2+a_s)*fwhm_data[o,t],
+                                   np.nanmax(gaus_params[o,t,:,1])+(2+a_s)*fwhm_data[o,t])
                     if CON==False:
-                        ax[1].axhline(y=(50)/binnx+1-a_s*fwhm_data[o,t],color='white',linewidth=1.0)
-                        ax[1].axhline(y=(50)/binnx+1+a_s*fwhm_data[o,t],color='white',linewidth=1.0)
-                        ax[1].axhline(y=(50)/binnx+1,color='white',linewidth=0.5,alpha=0.6)
-                        ax[1].set_ylim((50)/binnx+1-2*a_s*fwhm_data[o,t],(50)/binnx+1+2*a_s*fwhm_data[o,t])
+                        ax[1].plot(gaus_params[o,t,:,1]-a_s*fwhm_data[o,t],color='white',linewidth=1.0)
+                        ax[1].plot(gaus_params[o,t,:,1]+a_s*fwhm_data[o,t],color='white',linewidth=1.0)
+                        ax[1].plot(gaus_params[o,t,:,1],color='white',linewidth=0.5,alpha=0.6)
                     if CON==True:
-                        ax[1].axhline(y=(50)/binnx+1-a_s*ing_fwhm,color='white',linewidth=1.0)
-                        ax[1].axhline(y=(50)/binnx+1+a_s*ing_fwhm,color='white',linewidth=1.0)
-                        ax[1].axhline(y=(50)/binnx+1,color='white',linewidth=0.5,alpha=0.6)
-                        ax[1].set_ylim((50)/binnx+1-2*a_s*ing_fwhm,(50)/binnx+1+2*a_s*ing_fwhm)
+                        ax[1].plot(gaus_params[o,t,:,1]-a_s*ing_fwhm,color='white',linewidth=1.0)
+                        ax[1].plot(gaus_params[o,t,:,1]+a_s*ing_fwhm,color='white',linewidth=1.0)
+                        ax[1].plot(gaus_params[o,t,:,1],color='white',linewidth=0.5,alpha=0.6)
                     ax[1].set_xticklabels([])
                     plt.figtext(0.15,0.70,t,color='grey',fontsize=30)
                     plt.show(block=False)
@@ -372,8 +392,11 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d
         for t in range(0,n_exp):
             for j in range(0,n_rows):
                 sz=a_s*math.ceil(fwhm_data[o,t])
-                flat_spec[o,t,j]=np.nansum(
-                    Xalign_data[o,t,j,int(50/binnx+1-sz):int(50/binnx+1+sz)])
+                low=int(np.nanmax(0,gaus_params[o,t,j,1]-sz))
+                up=int(np.nanmin(gaus_params[o,t,j,1]+sz,obj_data.shape[2]))
+                flat_spec[o,t,j]=np.nansum(obj_data[t,j,low:up+1])
+                flat_bkgd[o,t,j]=np.nansum(obj_data[t,j,low:up+1])
+#                    Xalign_data[o,t,j,int(50/binnx+1-sz):int(50/binnx+1+sz)])
         for t in range(0,n_exp):
             rm_s_a,flat_spec[o,t,:]=outlierr_c(np.copy(flat_spec[o,t,:]),ks_s,sig_s)
             rm_s+=rm_s_a
@@ -395,6 +418,8 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d
             plt.close()
             
         print datetime.now()-time0   
-    np.savez_compressed(SAVEPATH+'FlattenedSpectra.npz',flat_spec=flat_spec,
-                        xalign=Xalign_data,fwhm_ar=fwhm_data,gaus_params=gaus_params)
+        PARAMS=np.array(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d,ks_s,sig_s,ing_fwhm,
+                ver_full,ver_a,ver_t,ver_x,ver_w,ver,data_corr,trip,time_start,time_trim,obj_skip,a_s,a_d)
+    np.savez_compressed(SAVEPATH+'FlattenedSpectra.npz',params=params,flat_spec=flat_spec,flat_bkgd=flat_bkgd,
+                        fwhm_ar=fwhm_data,gaus_params=gaus_params)
      

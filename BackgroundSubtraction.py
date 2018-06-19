@@ -96,7 +96,7 @@ def BG_remove(extray,SAVEPATH,binnx,binny,Lflat,Ldark,ed_l,ed_u,ed_t,ks_b,sig_b,
             if t%10==0:
                 print '       *** TIME: ',t,' ***'
             
-            frame=np.array(obj_data[t,:,:])   #current frame
+            frame=np.copy(obj_data[t,:,:])   #current frame
             ################# VERBOSE OUTPUT #################
             if ver_full==True:
                 plt.figure(102,figsize=(14,4))
@@ -112,7 +112,7 @@ def BG_remove(extray,SAVEPATH,binnx,binny,Lflat,Ldark,ed_l,ed_u,ed_t,ks_b,sig_b,
             ###################################################
             
             for j in range(0,n_rows):
-                row_data=np.array(frame[j,:])
+                row_data=np.copy(frame[j,:])
                 
                 bg_pix=np.append(xpix_ar[ed_t:ed_l],xpix_ar[xwidth-ed_u:xwidth-ed_t])
                 bg_dat_0=np.array(np.append(row_data[ed_t:ed_l],row_data[xwidth-ed_u:xwidth-ed_t]))
