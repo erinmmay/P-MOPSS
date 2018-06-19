@@ -193,7 +193,10 @@ def BG_remove(extray,SAVEPATH,binnx,binny,Lflat,Ldark,ed_l,ed_u,ed_t,ks_b,sig_b,
                     plt.close()
          
         print datetime.now()-time0
-        np.savez_compressed(SAVEPATH+'BG_SUBTRACTION_'+str(int(o))+'.npz',bkgd=bkgd_sv,corr=corr_sv,bkgd_params=bkgd_params)
+        PARAMS=extray,SAVEPATH,binnx,binny,Lflat,Ldark,ed_l,ed_u,ed_t,ks_b,sig_b,o_b,
+                ver,ver_full,ver_t,trip,time_start,time_trim,obj_skip
+        np.savez_compressed(SAVEPATH+'BG_SUBTRACTION_'+str(int(o))+'.npz',params=PARAMS,
+                            bkgd=bkgd_sv,corr=corr_sv,bkgd_params=bkgd_params)
     return
                         
                       

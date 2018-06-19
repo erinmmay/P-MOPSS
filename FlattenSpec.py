@@ -389,15 +389,19 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d
         ### flatten spectra ####
         rm_s=0
         #[n_obj,n_exp,2*ypixels/binny+ygap,100/binnx+1]
-        for t in range(0,n_exp):
+        for t in range(time_start,n_exp-time_trim):
             for j in range(0,n_rows):
+                if j>ypixels and j<=ypixels+ygap:  # if in gap
+                    continue
+                if not np.isfinite(row_data[0]):    # nans bookend the data
+                    continue
                 sz=a_s*math.ceil(fwhm_data[o,t])
-                low=int(np.nanmax(0,gaus_params[o,t,j,1]-sz))
-                up=int(np.nanmin(gaus_params[o,t,j,1]+sz,obj_data.shape[2]))
+                low=int(np.nanmax([0,gaus_params[o,t,j,1]-sz]))
+                up=int(np.nanmin([gaus_params[o,t,j,1]+sz,obj_data.shape[2]]))
                 flat_spec[o,t,j]=np.nansum(obj_data[t,j,low:up+1])
                 flat_bkgd[o,t,j]=np.nansum(obj_data[t,j,low:up+1])
 #                    Xalign_data[o,t,j,int(50/binnx+1-sz):int(50/binnx+1+sz)])
-        for t in range(0,n_exp):
+        for t in range(time_start,n_exp-time_trim):
             rm_s_a,flat_spec[o,t,:]=outlierr_c(np.copy(flat_spec[o,t,:]),ks_s,sig_s)
             rm_s+=rm_s_a
         
@@ -408,7 +412,7 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d
             scal_m.set_array([])
             
             fig=plt.figure(301,figsize=(15,4))
-            for t in range(0,n_exp):
+            for t in range(time_start,n_exp-time_trim):
                 plt.plot(flat_spec[o,t,:],color=scal_m.to_rgba(t),linewidth=1.0)
             # [left, bottom, width, height
             cbaxes = fig.add_axes([0.15, 0.2, 0.02, 0.6]) 
@@ -418,8 +422,8 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d
             plt.close()
             
         print datetime.now()-time0   
-        PARAMS=np.array(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d,ks_s,sig_s,ing_fwhm,
-                ver_full,ver_a,ver_t,ver_x,ver_w,ver,data_corr,trip,time_start,time_trim,obj_skip,a_s,a_d)
-    np.savez_compressed(SAVEPATH+'FlattenedSpectra.npz',params=params,flat_spec=flat_spec,flat_bkgd=flat_bkgd,
+    PARAMS=[extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d,ks_s,sig_s,ing_fwhm,
+                ver_full,ver_a,ver_t,ver_x,ver_w,ver,data_corr,trip,time_start,time_trim,obj_skip,a_s,a_d]
+    np.savez_compressed(SAVEPATH+'FlattenedSpectra.npz',params=PARAMS,flat_spec=flat_spec,flat_bkgd=flat_bkgd,
                         fwhm_ar=fwhm_data,gaus_params=gaus_params)
      
