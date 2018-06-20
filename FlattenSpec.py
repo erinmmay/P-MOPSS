@@ -391,10 +391,10 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d
         #[n_obj,n_exp,2*ypixels/binny+ygap,100/binnx+1]
         for t in range(time_start,n_exp-time_trim):
             for j in range(0,n_rows):
-                if j>ypixels and j<=ypixels+ygap:  # if in gap
-                    continue
-                if not np.isfinite(row_data[0]):    # nans bookend the data
-                    continue
+#                 if j>ypixels and j<=ypixels+ygap:  # if in gap
+#                     continue
+#                 if not np.isfinite(row_data[0]):    # nans bookend the data
+#                     continue
                 sz=a_s*math.ceil(fwhm_data[o,t])
                 low=int(np.nanmax([0,gaus_params[o,t,j,1]-sz]))
                 up=int(np.nanmin([gaus_params[o,t,j,1]+sz,obj_data.shape[2]]))
@@ -422,8 +422,8 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d
             plt.close()
             
         print datetime.now()-time0   
-    PARAMS=[extray,SAVEPATH,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d,ks_s,sig_s,ing_fwhm,
-                ver_full,ver_a,ver_t,ver_x,ver_w,ver,data_corr,trip,time_start,time_trim,obj_skip,a_s,a_d]
+    PARAMS=[extray,ed_l,ed_u,binnx,binny,Lflat,Ldark,CON,ks_d,sig_d,ks_s,sig_s,ing_fwhm,
+                ver_full,ver_a,ver_t,ver_x,ver_w,ver,data_corr,trip,time_start,time_trim,a_s,a_d]
     np.savez_compressed(SAVEPATH+'FlattenedSpectra.npz',params=PARAMS,flat_spec=flat_spec,flat_bkgd=flat_bkgd,
                         fwhm_ar=fwhm_data,gaus_params=gaus_params)
      

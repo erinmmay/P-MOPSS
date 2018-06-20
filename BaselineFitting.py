@@ -544,6 +544,44 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,
             ax[3].set_ylim(ybot,ytop)
             plt.show()
             
+        elif noise_white==True:
+            fig,ax=plt.subplots(1,3,figsize=(15,4))
+            ax[0].plot(time0,LCb*common_white,'.',markersize=9.,color=scal_m.to_rgba(bin_ctr[b]),alpha=0.8)
+            #ax[0].plot(oot_t,oot_F,'.',markersize=9.,color=scal_m.to_rgba(bin_ctr[b]+width))
+            #ax[0].plot(time0,out,'-',color='black')
+            ax[0].set_ylim(ybot-0.005,ytop+0.005)
+            ax[0].set_title(str(int(bin_ctr[b])))
+            ax[0].set_xlabel('Time,[hrs]')
+            ax[0].set_ylabel('Relative Flux [hrs]')
+            
+            ax[1].plot(time0,LCb,'.',markersize=9.,color=scal_m.to_rgba(bin_ctr[b]),alpha=0.2)
+            ax[1].plot(oot_t,oot_F,'.',markersize=9.,color=scal_m.to_rgba(bin_ctr[b]+width))
+            ax[1].plot(time0,out,'-',color='black')
+            #ax[0].set_ylim(0.97,np.nanmax(LCb))
+            ax[1].set_title(str(int(bin_ctr[b])))
+            ax[1].set_xlabel('Time,[hrs]')
+            ax[1].set_ylabel('Relative Flux [hrs]')
+            ax[1].set_ylim(ybot,ytop)
+           
+            
+            ta=(np.append(time0[np.where(time0<timein)],time0[np.where(time0>timeeg)]))
+            Fa=(np.append(new[np.where(time0<timein),b],new[np.where(time0>timeeg),b]))
+        
+            ta=ta[~np.isnan(Fa)]
+            Fa=Fa[~np.isnan(Fa)]
+
+            RMSE_est[b]=np.sqrt(np.nanmean(((Fa)-1.0)**2.))
+            RMSE_est_orig=RMSE_est
+            noise_model_fit=np.zeros_like(new)
+
+            ax[2].plot(time0,new[:,b],'.',markersize=9.,color=scal_m.to_rgba(bin_ctr[b]),alpha=0.2)
+            ax[2].plot(oot_t0,oot_F0/out0,'.',markersize=11.,color=scal_m.to_rgba(bin_ctr[b]+width))
+            ax[2].plot(time0,out/out,'-',color='black')
+            ax[2].set_title(str(np.round(RMSE_est[b],6)),fontsize=15)
+            ax[2].set_ylim(ybot,ytop)
+            ax[2].set_xlabel('Time,[hrs]')
+            ax[2].set_ylabel('Relative Flux [hrs]')
+            plt.show()
         else:
             fig,ax=plt.subplots(1,2,figsize=(10,4))
             ax[0].plot(time0,LCb,'.',markersize=9.,color=scal_m.to_rgba(bin_ctr[b]),alpha=0.2)
