@@ -15,7 +15,8 @@ from setup import *
 
 def BinWhite(SAVEPATH,midtime,start,end,skip,binny):
     load=np.load(SAVEPATH+'ShiftedSpec_All.npz')
-    cnt_arr=load['data']
+    #cnt_arr=load['data']
+    cnt_arr=load['convolved']
     wav_arr=load['wave']
     del load
     

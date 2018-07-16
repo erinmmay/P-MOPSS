@@ -21,7 +21,7 @@ def Gaussian_P(x,a,b,c,x0,x1):
 
 def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,Lflat,Ldark,CON,
                 ks_b,sig_b,ks_d,sig_d,ks_s,sig_s,ing_fwhm,ver_full,ver_fit,ver_spec,ver_xcen,
-                data_corr,trip,time_start,time_trim,obj_skip,a_s,a_d):
+                data_corr,trip,time_start,time_trim,obj_skip,reloadd,saver,r_skip,a_s,a_d):
     #extray= number of pixels in y direction extra that were extracted
     #SAVEPATH= location of saved 2D spec
     #ed_l= location of lower boundary between background/data - only used for initial guess of centroid
@@ -42,6 +42,9 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,Lflat,Ldark,CON,
     #a_d= not used currently
     
     ###########################################
+    PARAMS=[extray,ed_l,ed_u,ed_t,binnx,binny,Lflat,Ldark,CON,
+                ks_b,sig_b,ks_d,sig_d,ks_s,sig_s,ing_fwhm,ver_full,ver_fit,ver_spec,
+                data_corr,trip,time_start,time_trim,a_s,a_d]
     
     n_obj=int(np.load(SAVEPATH+'FinalMasks.npz')['masks'].shape[0])
     n_exp=np.load(SAVEPATH+'HeaderData.npz')['n_exp']
@@ -102,29 +105,34 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,Lflat,Ldark,CON,
     
         sub_bkgd=np.empty([n_exp,2*ypixels/binny+ygap,xwidth])*np.nan
         
+        
         #begin loop over time...
         for t in range(time_start,n_exp-time_trim):
             if t%10==0:
                 print '       *** TIME: ',t,' ***'
             
             frame=np.copy(obj_data[t,:,:])   #current frame
+            plt_data=np.empty([2*ypixels+ygap,xwidth])*np.nan
             
             ################# VERBOSE OUTPUT #################
             if ver_full==True:
-                plt.figure(102,figsize=(14,4))
-                plt.title('RAW: OBJ='+str(int(o))+' TIME='+str(int(t)))
-                for j in range(0,n_rows):
-                    plt.plot(xpix_ar,frame[j,:],linewidth=1.0)
-                plt.axvline(x=ed_l, color='grey',linewidth=0.5)
-                plt.axvline(x=xwidth-ed_u,color='grey',linewidth=0.5)
-                plt.axvline(x=ed_t, color='grey',linewidth=0.5)
-                plt.axvline(x=xwidth-ed_t,color='grey',linewidth=0.5)
-                plt.show(block=False)
-                plt.close()
+                if t%10==0:
+                    plt.figure(102,figsize=(14,4))
+                    plt.title('RAW: OBJ='+str(int(i))+' TIME='+str(int(t)))
+                    for j in range(0,n_rows):
+                        plt.plot(xpix_ar,frame[j,:],linewidth=1.0)
+                    plt.axvline(x=ed_l, color='grey',linewidth=0.5)
+                    plt.axvline(x=xwidth-ed_u,color='grey',linewidth=0.5)
+                    plt.axvline(x=ed_t, color='grey',linewidth=0.5)
+                    plt.axvline(x=xwidth-ed_t,color='grey',linewidth=0.5)
+                    plt.show(block=False)
+                    plt.close()
+                else:
+                    print '*** ', t, ' ***'
             ###################################################
             
             for j in range(0,n_rows):
-                row_data=np.copy(frame[j,:])
+                row_data=np.copy(frame[j,:])  #obj data is not y_start shifted 
                 
                 ## FIT IN COMBINATION -- polynomial and gaussian ##
                 p0=np.array([(np.nanmax(row_data[ed_l:xwidth-ed_u])-np.nanmedian(row_data[ed_t:ed_l])),
@@ -145,20 +153,22 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,Lflat,Ldark,CON,
                     if t%10==0 and j%100==0:
                         fig,ax=plt.subplots(2,1,figsize=(15,6))
                         fig.subplots_adjust(wspace=0, hspace=0)
-                       # plt.title('FIRST FIT: OBJ='+str(int(o))+
-                       #                   ' TIME='+str(int(t))+' ROW='+str(np.round(100.*float(j)/float(n_rows),5))+'%')
+                        #plt.title('FIRST FIT: OBJ='+str(int(i))+
+                        #                  ' TIME='+str(int(t))+' ROW='+str(np.round(100.*float(j)/float(n_rows),5))+'%')
                         ax[0].plot(xpix_ar,row_data,color='black',linewidth=4.0)
+
                         ax[0].plot(xpix_ar,Gaussian_P(xpix_ar,*p0),color='blue',linewidth=1.0,linestyle='--')
                         ax[0].plot(xpix_ar,Gaussian_P(xpix_ar,*fit_params[i,t,j+y_start,:]),color='cyan',linewidth=2.0)
                         ax[0].axvline(x=fit_params[i,t,j+y_start,1],color='red',linewidth=2.0)
                         ax[0].axvline(x=fit_params[i,t,j+y_start,1]-a_s*fit_params[i,t,j+y_start,2],color='tomato',linewidth=1.0)
                         ax[0].axvline(x=fit_params[i,t,j+y_start,1]+a_s*fit_params[i,t,j+y_start,2],color='tomato',linewidth=1.0) 
                         ax[0].set_xlim(0,xwidth)
+                        plt.figtext(0.2,0.75,str(int(i))+' '+str(int(t))+' '+str(int(j)),fontsize=20)
   
 
                 ### run median filter compared to first fit ON BACKGROUND ONLY###
-                ned_l=int(np.nanmax([fit_params[i,t,j+y_start,1]-5.*fit_params[i,t,j+y_start,2],0]))
-                ned_u=int(np.nanmin([fit_params[i,t,j+y_start,1]+5.*fit_params[i,t,j+y_start,2],xwidth]))
+                ned_l=int(np.nanmax([fit_params[i,t,j+y_start,1]-(a_s-1)*fit_params[i,t,j+y_start,2],0]))
+                ned_u=int(np.nanmin([fit_params[i,t,j+y_start,1]+(a_s-1)*fit_params[i,t,j+y_start,2],xwidth]))
                 if ned_l>xwidth:
                     ned_l=0
                 if ned_u<0:
@@ -169,6 +179,10 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,Lflat,Ldark,CON,
                 nrow_data=np.append(row_data[:ned_l],row_data[ned_u:])
                 
                 model=Gaussian_P(nxpix_ar,*fit_params[i,t,j+y_start,:])
+#                 plt.figure(201,figsize=(10,10))
+#                 plt.plot(xpix_ar,row_data,color='black',linewidth=5.0)
+#                 plt.plot(nxpix_ar,model,color='red',linewidth=2.0)
+#                 plt.show()
                 c1=0
                 c2=0
                 c3=0
@@ -200,17 +214,22 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,Lflat,Ldark,CON,
                    # plt.title('FIRST FIT: OBJ='+str(int(o))+
                    #                   ' TIME='+str(int(t))+' ROW='+str(np.round(100.*float(j)/float(n_rows),5))+'%')
                         ax[1].plot(nxpix_ar,row_data_1,color='grey',linewidth=2.0)
+                        if trip==True:
+                            ax[1].plot(nxpix_ar,row_data_2,color='grey',linewidth=2.0)
                         ax[1].plot(xpix_ar,row_data,color='black',linewidth=4.0)
                         ax[1].plot(xpix_ar,Gaussian_P(xpix_ar,*fit_params[i,t,j+y_start,:]),color='cyan',linewidth=2.0)
                         ax[1].axvline(x=fit_params[i,t,j+y_start,1],color='red',linewidth=2.0)
                         ax[1].axvline(x=fit_params[i,t,j+y_start,1]-a_s*fit_params[i,t,j+y_start,2],color='tomato',linewidth=1.0)
                         ax[1].axvline(x=fit_params[i,t,j+y_start,1]+a_s*fit_params[i,t,j+y_start,2],color='tomato',linewidth=1.0) 
                         ax[1].set_xlim(0,xwidth)
+                        plt.figtext(0.2,0.4,tr,fontsize=20)                          
                         plt.show(block=False)
                         plt.close()
                         
                 bkgd_sv[t,j+y_start,:]=fit_params[i,t,j+y_start,3]*xpix_ar+fit_params[i,t,j+y_start,4]
                 sub_bkgd[t,j+y_start,:]=row_data-bkgd_sv[t,j+y_start,:]
+                frame[j,:]=row_data
+                plt_data[j+y_start,:]=row_data-bkgd_sv[t,j+y_start,:]
                 
             #calculating fit to x-centers
             y_arr_nnan=np.linspace(1,2*ypixels/binny+ygap,2*ypixels/binny+ygap)[~np.isnan(fit_params[i,t,:,1])]
@@ -223,18 +242,39 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,Lflat,Ldark,CON,
 
             fit_params[i,t,:,1]=x_fit_full
             
+            fwhm_data[i,t]=np.nanmedian(fit_params[i,t,:,2])
+            
             if ver_xcen==True:
                 if t%10==0:
                     plt.figure(104,figsize=(15,2))
-                    plt.plot(y_arr_nnan,x_ctr_nnan,'.',color='black',markersize=8,alpha=0.4,zorder=0)
-                    plt.plot(y_arr_nnan,medfilt(x_ctr_nnan,kernel_size=5),'.',color='black',markersize=8,zorder=1)
-                    plt.plot(y_arr_nnan,x_fit_nnan,color='red',linewidth=2.0,alpha=0.5,zorder=3)
-                    plt.plot(np.linspace(1,2*ypixels/binny+ygap,2*ypixels/binny+ygap),x_fit_full,color='red',zorder=4)
+                    plt.imshow((plt_data.T),cmap=plt.cm.plasma,aspect='auto')
+                    #plt.plot(y_arr_nnan,x_ctr_nnan,'.',color='black',markersize=8,alpha=0.4,zorder=0)
+                    #plt.plot(y_arr_nnan,medfilt(x_ctr_nnan,kernel_size=5),'.',color='black',markersize=8,zorder=1)
+                    #plt.plot(y_arr_nnan,x_fit_nnan,color='red',linewidth=2.0,alpha=0.5,zorder=3)
+                    plt.plot(y_arr_nnan,x_fit_nnan,color='white',linewidth=2.0,zorder=4)
+                    plt.plot(y_arr_nnan,x_fit_nnan-a_s*fwhm_data[i,t],color='white',linewidth=0.5)
+                    plt.plot(y_arr_nnan,x_fit_nnan+a_s*fwhm_data[i,t],color='white',linewidth=0.5)
                     plt.figtext(0.2,0.7,str(int(t)),fontsize=20)
-                    plt.ylim(40/binnx,160/binnx)
+                    plt.ylim(np.nanmin(x_fit_nnan-(a_s+1)*fwhm_data[i,t]),np.nanmax(x_fit_nnan+(a_s+1)*fwhm_data[i,t]))
                     plt.show(block=False)
-                
-            fwhm_data[i,t]=np.nanmedian(fit_params[i,t,:,2])
+            
+            ################# VERBOSE OUTPUT #################
+            if ver_full==True:
+                if t%10==0:
+                    plt.figure(102,figsize=(14,4))
+                    plt.title('CORRECTED: OBJ='+str(int(i))+' TIME='+str(int(t)))
+                    for j in range(0,n_rows):
+                        plt.plot(xpix_ar,sub_bkgd[t,j+y_start,:],linewidth=1.0)
+#                     plt.axvline(x=int(np.nanmax([fit_params[i,t,j+y_start,1]-a_s*fit_params[i,t,j+y_start,2],0])),
+#                                 color='grey',linewidth=0.5)
+#                     plt.axvline(x=int(np.nanmin([fit_params[i,t,j+y_start,1]+a_s*fit_params[i,t,j+y_start,2],xwidth])),
+#                                 color='grey',linewidth=0.5)
+                    #plt.axvline(x=ed_t, color='grey',linewidth=0.5)
+                    #plt.axvline(x=xwidth-ed_t,color='grey',linewidth=0.5)
+                    plt.show(block=False)
+                    plt.close()
+            ###################################################
+             # flatten spec....  
             for j in range(0,n_rows):
                 lowi=int(np.nanmax([fit_params[i,t,j+y_start,1]-a_s*fit_params[i,t,j+y_start,2],0]))
                 uppi=int(np.nanmin([fit_params[i,t,j+y_start,1]+a_s*fit_params[i,t,j+y_start,2],xwidth]))
@@ -249,6 +289,7 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,Lflat,Ldark,CON,
             if trip==True:
                 rm_s_a,flat_spec[i,t,:]=outlierr_c(np.copy(flat_spec[i,t,:]),ks_s,sig_s)
                 rm_s+=rm_s_a
+        
         if ver_spec==True:
             norm=matplotlib.colors.Normalize(vmin=0,vmax=n_exp)
             colors=matplotlib.cm.viridis
@@ -264,10 +305,22 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,Lflat,Ldark,CON,
             plt.figtext(0.2,0.8,rm_s,color='black',fontsize=25)
             plt.show(block=False)
             plt.close()
-        print datetime.now()-time0   
-    PARAMS=[extray,ed_l,ed_u,ed_t,binnx,binny,Lflat,Ldark,CON,
-                ks_b,sig_b,ks_d,sig_d,ks_s,sig_s,ing_fwhm,ver_full,ver_fit,ver_spec,
-                data_corr,trip,time_start,time_trim,a_s,a_d]
-    np.savez_compressed(SAVEPATH+'FlattenedSpectra.npz',params=PARAMS,flat_spec=flat_spec,flat_bkgd=flat_bkgd,
-                        fwhm_ar=fwhm_data,gaus_params=fit_params)
+        print datetime.now()-time0  
+        np.savez_compressed(SAVEPATH+'FlatSpec_Obj'+str(int(i))+'.npz',params=PARAMS,spec=flat_spec[i,:,:],
+                            bkgd=flat_bkgd[i,:,:], fwhm=fwhm_data[i,t], gaus=fit_params[i,:,:,:])
+   
+    if saver==True:
+        if reloadd==True:
+            print '---- reloading in previously run targets'
+            for i in range(0,n_obj):
+                if i in r_skip:
+                    continue
+                print '         ',i
+                flat_spec[i,:,:]=np.load(SAVEPATH+'FlatSpec_Obj'+str(int(i))+'.npz')['spec']
+                flat_bkgd[i,:,:]=np.load(SAVEPATH+'FlatSpec_Obj'+str(int(i))+'.npz')['bkgd']
+                fwhm_data[i,:]=np.load(SAVEPATH+'FlatSpec_Obj'+str(int(i))+'.npz')['fwhm']
+                fit_params[i,:,:,:]=np.load(SAVEPATH+'FlatSpec_Obj'+str(int(i))+'.npz')['gaus']    
+        print '---- saving data'
+        np.savez_compressed(SAVEPATH+'FlattenedSpectra.npz',params=PARAMS,flat_spec=flat_spec,flat_bkgd=flat_bkgd,
+                            fwhm_ar=fwhm_data,gaus_params=fit_params)
                

@@ -11,7 +11,7 @@ from outlier_removal import outlierr
 
 from setup import *
 
-def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,noise_red,h_o_t,see_t,time_skip):
+def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,noise_red,h_o_t,see_t,time_trim):
 
     order=order
     low=olow
@@ -32,8 +32,9 @@ def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,noise
         err_p=np.load(SAVEPATH+'LCwhite.npz')['err_p']
      
     for t in range(0,len(time0)):
-        if t<time_skip:
+        if t>len(time0)-time_trim:
             LC[t]=np.nan
+            
         
     if noise_red==True:
         n_exp=len(time0)
@@ -123,6 +124,8 @@ def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,noise
 #             elif f==len(LC)-1:
 #                 LC[f]=LC[f-1]
                 
+    LC=outlierr(LC,5,3)
+    LC=outlierr(LC,5,3)
     LC=outlierr(LC,5,3)
         
     z=avg
@@ -285,7 +288,7 @@ def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,noise
 
         
 def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,
-                corr,noise_white,noise_red,h_o_t,see_t,spot,time_skip):
+                corr,noise_white,noise_red,h_o_t,see_t,spot,time_trim):
 
     order=order
     low=olow
@@ -317,7 +320,7 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,
     print bin_arr
     
     for t in range(0,len(time0)):
-        if t<time_skip:
+        if t>len(time0)-time_trim:
             LC_l[t,:]=np.nan
     
     if noise_white==True:
@@ -403,6 +406,8 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,
 #                 if f==LC_l.shape[0]-1:
 #                     LC_l[f,b]=LC_l[f-1,b]
                     
+        LC_l[:,b]=outlierr(LC_l[:,b],5,3)
+        LC_l[:,b]=outlierr(LC_l[:,b],5,3)
         LC_l[:,b]=outlierr(LC_l[:,b],5,3)
      
         LCb=LC_l[:,b]
