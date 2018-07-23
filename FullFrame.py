@@ -6,7 +6,7 @@ from setup import *
 
 def FullFrame(n_frames,d_frames,binnx,binny):
     #binn=1
-    FULL=np.empty([n_frames,int(2*ypixels/binny+ygap),int(4*xpixels/binnx+3*xgap)])*0.0
+    FULL=np.empty([n_frames,int(2*ypixels/binny+ygap),int(4*xpixels/binnx+3*xgap)])*np.nan
     if n_frames==1:
         FULL[0,:,0:xpixels/binnx]=d_frames[0,:,:]
         FULL[0,:,xpixels/binnx+xgap:2*xpixels/binnx+xgap]=d_frames[1,:,:]
@@ -15,7 +15,7 @@ def FullFrame(n_frames,d_frames,binnx,binny):
     return FULL
 
 def Bin_FullFrame(n_frames,d_frames,binnx,binny):
-    FULL=np.empty([n_frames,2*ypixels/binny+ygap,4*xpixels/binnx+3*xgap])*0.0
+    FULL=np.empty([n_frames,2*ypixels/binny+ygap,4*xpixels/binnx+3*xgap])*np.nan
     for y in range(0,FULL.shape[1]):
         for x in range(0,FULL.shape[2]):
             if y<=(ypixels/binny):
