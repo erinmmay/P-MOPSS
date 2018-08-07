@@ -241,7 +241,9 @@ def Extract2D(path,ex,SAVEPATH,FLATPATH_SPEC,DARKPATH,binnx,binny,fb,Lflat,Ldark
                 print '           ( EXTRACTED DATA FOR IMAGE ', np.int(exp_cnt), ')  --   ', n_exp, ' exposures total'
     for k in range(0,n_obj):   
         saved=data['obj'+str(int(k))]
-        savef=FLAT['obj'+str(int(k))]
+        savef=np.nan
+        if Lflat==True:
+            savef=FLAT['obj'+str(int(k))]
         #print k, np.nanmedian(save)
         np.savez_compressed(SAVEPATH+'2DSpec_obj'+str(int(k))+'.npz', data=saved,flat=savef,dark=dark_vars[k])
     return data
