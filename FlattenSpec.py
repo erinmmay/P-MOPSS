@@ -309,7 +309,7 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,fb,Lflat,Ldark,CON,
 
             fit_params[i,t,:,1]=x_fit_full
             
-            fwhm_data[i,t]=np.nanmedian(fit_params[i,t,:,2])
+            fwhm_data[i,t]=2*np.sqrt(2.*np.log(2.))*np.nanmedian(fit_params[i,t,:,2])
             
             if ver_xcen==True:
                 if t%10==0:
@@ -335,8 +335,10 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,fb,Lflat,Ldark,CON,
             ###################################################
              # flatten spec....  
             for j in range(0,n_rows):
-                lowi=int(np.nanmax([fit_params[i,t,j+y_start,1]-a_s*fit_params[i,t,j+y_start,2],0]))
-                uppi=int(np.nanmin([fit_params[i,t,j+y_start,1]+a_s*fit_params[i,t,j+y_start,2],xwidth]))
+                lowi=int(np.nanmax([fit_params[i,t,j+y_start,1]-a_s*fwhm_data[i,t],0]))
+                uppi=int(np.nanmin([fit_params[i,t,j+y_start,1]+a_s*fwhm_data[i,t],xwidth]))
+                #lowi=int(np.nanmax([fit_params[i,t,j+y_start,1]-a_s*fit_params[i,t,j+y_start,2],0]))
+                #uppi=int(np.nanmin([fit_params[i,t,j+y_start,1]+a_s*fit_params[i,t,j+y_start,2],xwidth]))
                 flat_spec[i,t,j+y_start]=np.nansum(sub_bkgd[t,j+y_start,lowi:uppi])
                 flat_bkgd[i,t,j+y_start]=np.nansum(bkgd_sv[t,j+y_start,lowi:uppi])
         rm_s=0
