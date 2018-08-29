@@ -57,7 +57,7 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,fb,Lflat,Ldark,CON,
 #         flat_var=np.load(SAVEPATH+'Flats.npz')['var']
         
     fit_params=np.empty([n_obj,n_exp,2*ypixels/binny+ygap,5])*np.nan
-    fwhm_data=np.empty([n_obj,n_exp])
+    fwhm_data=np.empty([n_obj,n_exp])*np.nan
     flat_spec=np.empty([n_obj,n_exp,2*ypixels/binny+ygap])*np.nan
     flat_bkgd=np.empty([n_obj,n_exp,2*ypixels/binny+ygap])*np.nan
     
@@ -141,7 +141,7 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,fb,Lflat,Ldark,CON,
                              ing_fwhm,0.0,
                              np.nanmedian(row_data[ed_t:ed_l])])
                 #check S/N of row:
-                if np.nanmax(row_data[ed_l:xwidth-ed_u])<1.5*np.nanmedian(row_data[ed_t:ed_l]):
+                if np.nanmax(row_data[ed_l:xwidth-ed_u])<2.0*np.sqrt(np.nanmedian(row_data[ed_t:ed_l])):
                     frame[j,:]=np.empty([len(row_data)])*np.nan
                     if t%10==0:
                         print '        LOW S/N AT ROW', j+y_start
@@ -309,7 +309,8 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,fb,Lflat,Ldark,CON,
 
             fit_params[i,t,:,1]=x_fit_full
             
-            fwhm_data[i,t]=2*np.sqrt(2.*np.log(2.))*np.nanmedian(fit_params[i,t,:,2])
+            fwhm_data[i,t]=2.*np.sqrt(2.*np.log(2.))*np.nanmedian(fit_params[i,t,:,2])
+            #print fwhm_data[i,:]
             
             if ver_xcen==True:
                 if t%10==0:
@@ -368,7 +369,7 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,fb,Lflat,Ldark,CON,
             plt.close()
         print datetime.now()-time0  
         np.savez_compressed(SAVEPATH+'FlatSpec_Obj'+str(int(i))+'.npz',params=PARAMS,spec=flat_spec[i,:,:],
-                            bkgd=flat_bkgd[i,:,:], fwhm=fwhm_data[i,t], gaus=fit_params[i,:,:,:])
+                            bkgd=flat_bkgd[i,:,:], fwhm=fwhm_data[i,:], gaus=fit_params[i,:,:,:])
    
     if saver==True:
         if reloadd==True:

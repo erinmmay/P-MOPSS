@@ -158,7 +158,7 @@ def Extract2D(path,ex,SAVEPATH,FLATPATH_SPEC,DARKPATH,binnx,binny,fb,Lflat,Ldark
         lowy_arr[i]=lowy
         topy_arr[i]=topy
      
-        data['obj'+str(int(i))]=np.empty([n_exp,np.int(topy-lowy),(xwid)])
+        data['obj'+str(int(i))]=np.empty([n_exp,np.int(topy-lowy),(xwid)])*np.nan
         if Lflat==True:
             print '  ****obj ', i
             fig,ax=plt.subplots(3,1,figsize=(15,9))
@@ -186,10 +186,10 @@ def Extract2D(path,ex,SAVEPATH,FLATPATH_SPEC,DARKPATH,binnx,binny,fb,Lflat,Ldark
     
     #data=np.empty([n_obj,n_exp,2*ypixels+ygap,200])*0.0
     
-    data_2c=np.empty([2*ypixels/binny+ygap,xpixels/binnx])*0.0
+    data_2c=np.empty([2*ypixels/binny+ygap,xpixels/binnx])*np.nan
     exp_cnt=0
 
-    image_full=np.empty([2*ypixels/binny+ygap,4*xpixels/binnx+3*xgap])*0.0
+    image_full=np.empty([2*ypixels/binny+ygap,4*xpixels/binnx+3*xgap])*np.nan
     
     for file in os.listdir(path):
         if file.endswith('.fits.gz'):
