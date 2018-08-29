@@ -66,7 +66,7 @@ def DetermineSide(nflats,path,ex,exx,SAVEPATH):
     data_2c=np.empty([2*ypixels+ygap,xpixels])*0.0
     exp_cnt=0
 
-    image_full=np.empty([2*ypixels+ygap,4*xpixels+3*xgap])*0.0
+    image_full=np.empty([2*ypixels+ygap,4*xpixels+3*xgap])*np.nan
     while exp_cnt<=1:
         for file in os.listdir(path):
             if file.endswith('.fits.gz'):
