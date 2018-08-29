@@ -10,13 +10,12 @@ def LCgen_white(SAVEPATH,corr,Cals_ind,csn):
     es=1.
     
     if corr==True:
-        Data=np.load(SAVEPATH+'Binned_Data_White_Corr.npz')['bin_counts']
-        errsw_t=np.load(SAVEPATH+'Binned_Data_White_Corr.npz')['bin_err']
-        errsw_p=np.load(SAVEPATH+'Binned_Data_White_Corr.npz')['bin_ptn']
+        Data=np.load(SAVEPATH+'NoiseModel_FitResults_White.npz')['data']
+
     else:
-        Data=np.load(SAVEPATH+'Binned_Data_White.npz')['bin_counts']
-        errsw_t=np.load(SAVEPATH+'Binned_Data_White.npz')['bin_err']
-        errsw_p=np.load(SAVEPATH+'Binned_Data_White.npz')['bin_ptn']
+        Data=(np.load(SAVEPATH+'Binned_Data_White.npz')['bin_counts'])[:,:,0]
+    errsw_t=(np.load(SAVEPATH+'Binned_Data_White.npz')['bin_err'])[:,:,0]
+    errsw_p=(np.load(SAVEPATH+'Binned_Data_White.npz')['bin_ptn'])[:,:,0]
 
     time0=np.load(SAVEPATH+'Obs_times.npz')['times']
     n_exp=len(time0)
@@ -33,17 +32,17 @@ def LCgen_white(SAVEPATH,corr,Cals_ind,csn):
     csn=csn
     
     if len(Cals_ind)==0:
-        Cals=np.ones_like(Data[0,:,0])
-        errs_cw_t=np.zeros_like(Data[0,:,0])
-        errs_cw_p=np.zeros_like(Data[0,:,0])
+        Cals=np.ones_like(Data[0,:])
+        errs_cw_t=np.zeros_like(Data[0,:])
+        errs_cw_p=np.zeros_like(Data[0,:])
     else:
-        Cals=np.zeros_like(Data[0,:,0])
-        errs_cw_t=np.zeros_like(Data[0,:,0])
-        errs_cw_p=np.zeros_like(Data[0,:,0])
+        Cals=np.zeros_like(Data[0,:])
+        errs_cw_t=np.zeros_like(Data[0,:])
+        errs_cw_p=np.zeros_like(Data[0,:])
         for c in Cals_ind:
-            Cals=(np.nansum([Cals,Data[c,:,0]],axis=0))
-            errs_cw_t=np.sqrt(np.nansum([errs_cw_t,errsw_t[c,:,0]**2.],axis=0))
-            errs_cw_p=np.sqrt(np.nansum([errs_cw_p,errsw_p[c,:,0]**2.],axis=0))
+            Cals=(np.nansum([Cals,Data[c,:]],axis=0))
+            errs_cw_t=np.sqrt(np.nansum([errs_cw_t,errsw_t[c,:]**2.],axis=0))
+            errs_cw_p=np.sqrt(np.nansum([errs_cw_p,errsw_p[c,:]**2.],axis=0))
 
 
     errs_cw_t/=np.nanmean(Cals)
@@ -52,14 +51,14 @@ def LCgen_white(SAVEPATH,corr,Cals_ind,csn):
 
     Cals=Cals/np.nanmean(Cals)
 
-    LC=(Data[0,:,0]/Cals)
-    CS=(Data[csn,:,0]/Cals)
+    LC=(Data[0,:]/Cals)
+    CS=(Data[csn,:]/Cals)
 
-    errs_w_t=np.sqrt(np.nansum([(errsw_t[0,:,0]/Data[0,:,0])**2.,(errs_cw_t/Cals)**2.],axis=0))*LC
-    errs_w_p=np.sqrt(np.nansum([(errsw_p[0,:,0]/Data[0,:,0])**2.,(errs_cw_p/Cals)**2.],axis=0))*LC
+    errs_w_t=np.sqrt(np.nansum([(errsw_t[0,:]/Data[0,:])**2.,(errs_cw_t/Cals)**2.],axis=0))*LC
+    errs_w_p=np.sqrt(np.nansum([(errsw_p[0,:]/Data[0,:])**2.,(errs_cw_p/Cals)**2.],axis=0))*LC
 
-    errs_cs_t=np.sqrt(np.nansum([(errsw_t[0,:,0]/Data[csn,:,0])**2.,(errs_cw_t/Cals)**2.],axis=0))*CS
-    errs_cs_p=np.sqrt(np.nansum([(errsw_p[0,:,0]/Data[csn,:,0])**2.,(errs_cw_p/Cals)**2.],axis=0))*CS
+    errs_cs_t=np.sqrt(np.nansum([(errsw_t[0,:]/Data[csn,:])**2.,(errs_cw_t/Cals)**2.],axis=0))*CS
+    errs_cs_p=np.sqrt(np.nansum([(errsw_p[0,:]/Data[csn,:])**2.,(errs_cw_p/Cals)**2.],axis=0))*CS
 
     errs_w_t/=np.nanmean(LC[0:20])
     errs_w_p/=np.nanmean(LC[0:20])
@@ -106,7 +105,7 @@ def LCgen_white(SAVEPATH,corr,Cals_ind,csn):
     fig,ax=plt.subplots(1,3,figsize=(15,4))
 
     ax[0].plot(time0,LC,'.',color='grey')
-    ax[0].errorbar(time0,LC,yerr=es*errs_w_t,ecolor='grey',elinewidth=0.5,alpha=0.5,zorder=9,fmt=None)
+    #ax[0].errorbar(time0,LC,yerr=es*errs_w_t,ecolor='grey',elinewidth=0.5,alpha=0.5,zorder=9,fmt=None)
     #ax[0].set_ylim(ymin_lc-0.01,ymax_lc+0.01)
     ax[0].set_title('WHITE')
     ax[0].set_xlabel('Time,[days]')
@@ -119,30 +118,25 @@ def LCgen_white(SAVEPATH,corr,Cals_ind,csn):
     #ax[1].set_ylabel('Relative Flux')
 
     ax[2].plot(time0,LCd,'.',color='grey')
-    ax[2].errorbar(time0,LCd,yerr=es*errs_lcd_w_t,ecolor='grey',elinewidth=0.5,alpha=0.5,zorder=9,fmt=None)
+    #ax[2].errorbar(time0,LCd,yerr=es*errs_lcd_w_t,ecolor='grey',elinewidth=0.5,alpha=0.5,zorder=9,fmt=None)
     #ax[2].set_ylim(ymin_lc-0.01,ymax_lc+0.01)
     ax[2].set_title('Divided - WHITE')
     ax[2].set_xlabel('Time,[days]')
     #ax[1].set_ylabel('Relative Flux')
 
     plt.show()
-    if corr==True:    
-        np.savez_compressed(SAVEPATH+'LCwhite_Corr.npz',data=LC,cs=CS,time=time0,err_t=errs_w_t,err_p=errs_w_p)
-    else:
-        np.savez_compressed(SAVEPATH+'LCwhite.npz',data=LC,cs=CS,time=time0,err_t=errs_w_t,err_p=errs_w_p)
+    np.savez_compressed(SAVEPATH+'LCwhite.npz',data=LC,cs=CS,time=time0,err_t=errs_w_t,err_p=errs_w_p)
     return
         
 def LCgen_binns(SAVEPATH,width,corr,Cals_ind,csn):
     es=1.
     
     if corr==True:
-        Datal=np.load(SAVEPATH+'Binned_Data_'+str(int(width))+'_Corr.npz')['bin_counts']
-        errs_t=np.load(SAVEPATH+'Binned_Data_'+str(int(width))+'_Corr.npz')['bin_err']
-        errs_p=np.load(SAVEPATH+'Binned_Data_'+str(int(width))+'_Corr.npz')['bin_ptn']
+        Datal=np.load(SAVEPATH+'NoiseModel_FitResults_'+str(int(width))+'.npz')['data']
     else:
         Datal=np.load(SAVEPATH+'Binned_Data_'+str(int(width))+'.npz')['bin_counts']
-        errs_t=np.load(SAVEPATH+'Binned_Data_'+str(int(width))+'.npz')['bin_err']
-        errs_p=np.load(SAVEPATH+'Binned_Data_'+str(int(width))+'.npz')['bin_ptn']
+    errs_t=np.load(SAVEPATH+'Binned_Data_'+str(int(width))+'.npz')['bin_err']
+    errs_p=np.load(SAVEPATH+'Binned_Data_'+str(int(width))+'.npz')['bin_ptn']
     
     time0=np.load(SAVEPATH+'Obs_times.npz')['times']
     
@@ -239,7 +233,8 @@ def LCgen_binns(SAVEPATH,width,corr,Cals_ind,csn):
 
         fig,ax=plt.subplots(1,3,figsize=(15,4))
         ax[0].plot(time0*24.,LC_l[:,b],'.',color=scal_m.to_rgba(bin_ctr[b]))
-        ax[0].errorbar(time0*24.,LC_l[:,b],yerr=es*errs_l_t[:,b],ecolor=scal_m.to_rgba(bin_ctr[b]),elinewidth=0.5,alpha=0.5,zorder=9,fmt=None)
+        #ax[0].errorbar(time0*24.,LC_l[:,b],yerr=es*errs_l_t[:,b],
+                       #ecolor=scal_m.to_rgba(bin_ctr[b]),elinewidth=0.5,alpha=0.5,zorder=9,fmt=None)
         #ax[0].set_ylim(ymin_lc-0.01,ymax_lc+0.01)
         ax[0].set_title(str(int(bin_ctr[b])))
         ax[0].set_xlabel('Time,[hrs]')
@@ -252,7 +247,8 @@ def LCgen_binns(SAVEPATH,width,corr,Cals_ind,csn):
     #ax[1].set_ylabel('Relative Flux')
     
         ax[2].plot(time0*24.,LC_d[:,b],'.',color=scal_m.to_rgba(bin_ctr[b]))
-        ax[2].errorbar(time0*24.,LC_d[:,b],yerr=es*errs_lcd_l_t[:,b],ecolor=scal_m.to_rgba(bin_ctr[b]),elinewidth=0.5,alpha=0.5,zorder=9,fmt=None)
+        #ax[2].errorbar(time0*24.,LC_d[:,b],yerr=es*errs_lcd_l_t[:,b],
+                       #ecolor=scal_m.to_rgba(bin_ctr[b]),elinewidth=0.5,alpha=0.5,zorder=9,fmt=None)
         #ax[2].set_ylim(ymin_lc-0.01,ymax_lc+0.01)
         ax[2].set_title('Divided - ' +str(int(bin_ctr[b])))
         ax[2].set_xlabel('Time,[hrs]')
@@ -260,9 +256,7 @@ def LCgen_binns(SAVEPATH,width,corr,Cals_ind,csn):
     
         plt.show()
 
-    if corr==True:    
-        np.savez_compressed(SAVEPATH+'LC_bins_'+str(int(width))+'_Corr.npz',data=LC_l,cs=CS_l,time=time0,bin_ctr=bin_ctr,err_t=errs_l_t,err_p=errs_l_p)
-    else:    
-        np.savez_compressed(SAVEPATH+'LC_bins_'+str(int(width))+'.npz',data=LC_l,cs=CS_l,time=time0,bin_ctr=bin_ctr,err_t=errs_l_t,err_p=errs_l_p)
+    np.savez_compressed(SAVEPATH+'LC_bins_'+str(int(width))+'.npz',
+                            data=LC_l,cs=CS_l,time=time0,bin_ctr=bin_ctr,err_t=errs_l_t,err_p=errs_l_p)
     return
       
