@@ -10,7 +10,7 @@ def airmass_func(t,k):
     z0=z[int(n_exp/2.)]
     return d0*10**(-1.0*k*(z-z0)/2.5)
 
-def NoiseRun_White(SAVEPATH,width,timein,timeeg,ybot,ytop,obj_skip):
+def NoiseRun_White(SAVEPATH,width,timein,timeeg,ybot,ytop,obj_skip,xs,ys,bg,fw):
 
 #     k_arr=airmass_fit(SAVEPATH,obj_skip)
 #     print k_arr
@@ -25,11 +25,17 @@ def NoiseRun_White(SAVEPATH,width,timein,timeeg,ybot,ytop,obj_skip):
     
     data=np.load(SAVEPATH+'Binned_Data_White.npz')['bin_counts']
     time0=np.load(SAVEPATH+'Obs_times.npz')['times']
+    
+    inds=np.isfinite(data[0,:,0])
+    time0=time0[inds]
+    data=data[:,inds,:]
+    
     n_exp=len(time0)
     n_obj=data.shape[0]
-
+   
     ##
     z=(np.load(SAVEPATH+'HeaderData.npz')['airmass'])
+    z=z[inds]
     ##
     k_white=np.empty([n_obj])*np.nan
     
@@ -89,10 +95,20 @@ def NoiseRun_White(SAVEPATH,width,timein,timeeg,ybot,ytop,obj_skip):
         fwhm_=(np.load(SAVEPATH+'FlattenedSpectra.npz')['gaus_params'])[o,:,:,2]#'fwhm_ar'])[0,:].reshape(-1,1)
         fwhm_=(2.*np.sqrt(2.*np.log(2.))*np.nanmedian(fwhm_,axis=1)).reshape(-1,1)
         plt.show(block=False)
-        ones=(np.ones(n_exp)).reshape(-1,1)
+        ones=(np.ones_like(X_loc)).reshape(-1,1)
 
         time_fl=(np.copy(time0)).reshape(-1,1)  #Full Time
-        model_stack_full=np.hstack((ones,fwhm_,X_loc,Y_loc,bg_ct))  #Full Matrix
+        
+        model_stack_full=ones
+        if xs==True:
+            model_stack_full=np.hstack((model_stack_full,X_loc))
+        if ys==True:
+            model_stack_full=np.hstack((model_stack_full,Y_loc))
+        if bg==True:
+            model_stack_full=np.hstack((model_stack_full,bg_ct))
+        if fw==True:
+            model_stack_full=np.hstack((model_stack_full,fwhm_))
+        #model_stack_full=np.hstack((ones,fwhm_,X_loc,Y_loc,bg_ct))  #Full Matrix
 
         out_index=np.array([],dtype=int)
         for t in range(0,len(time0)):
@@ -105,13 +121,13 @@ def NoiseRun_White(SAVEPATH,width,timein,timeeg,ybot,ytop,obj_skip):
         ###
         fig,ax=plt.subplots(4,1,figsize=(15,10))
         fig.subplots_adjust(wspace=0, hspace=0.0)
-        ax[0].plot(time_fl,X_loc,linewidth=4.0,color='slateblue',alpha=0.7)
+        ax[0].plot(time_fl,X_loc[inds],linewidth=4.0,color='slateblue',alpha=0.7)
         ax[0].set_title('X_shift')
-        ax[1].plot(time_fl,Y_loc,linewidth=4.0,color='slateblue',alpha=0.7)
+        ax[1].plot(time_fl,Y_loc[inds],linewidth=4.0,color='slateblue',alpha=0.7)
         ax[1].set_title('Y_shift')
-        ax[2].plot(time_fl,bg_ct,linewidth=4.0,color='slateblue',alpha=0.7)
+        ax[2].plot(time_fl,bg_ct[inds],linewidth=4.0,color='slateblue',alpha=0.7)
         ax[2].set_title('Background Counts')
-        ax[3].plot(time_fl,fwhm_,linewidth=4.0,color='slateblue',alpha=0.7)
+        ax[3].plot(time_fl,fwhm_[inds],linewidth=4.0,color='slateblue',alpha=0.7)
         ax[3].set_title('FWHM')
         plt.show()
         ###
@@ -121,10 +137,12 @@ def NoiseRun_White(SAVEPATH,width,timein,timeeg,ybot,ytop,obj_skip):
             LC_oott=np.append(dataf[np.where(time0<timein)],dataf[np.where(time0>timeeg)])
             beta_arr=np.dot(np.dot(inv(np.dot(X_arr.T,X_arr)),X_arr.T),LC_oott)
         else:
-            X_arr=model_stack_full
+            X_arr=model_stack_full[inds,:]
             beta_arr=np.dot(np.dot(inv(np.dot(X_arr.T,X_arr)),X_arr.T),dataf)
-
-        noise_model_fit[o,:]=np.dot(model_stack_full,beta_arr)
+#         print X_arr
+#         print beta_arr
+        
+        noise_model_fit[o,:]=(np.dot(model_stack_full,beta_arr))[inds]
         data_clean[o,:]=dataf/noise_model_fit[o,:]
 
         fig,ax=plt.subplots(1,2,figsize=(10,4))
@@ -144,7 +162,7 @@ def NoiseRun_White(SAVEPATH,width,timein,timeeg,ybot,ytop,obj_skip):
     np.savez_compressed(SAVEPATH+'NoiseModel_FitResults_White.npz',data=data_clean,k=k,noise_model=noise_model_fit)
 
     ################################
-def NoiseRun_Binns(SAVEPATH,width,timein,timeeg,ybot,ytop,obj_skip):
+def NoiseRun_Binns(SAVEPATH,width,timein,timeeg,ybot,ytop,obj_skip,xs,ys,bg,fw):
     
     bin_arr=np.load(SAVEPATH+'Binned_Data_'+str(int(width))+'.npz')['bins']
     bin_ctr=np.load(SAVEPATH+'Binned_Data_'+str(int(width))+'.npz')['bin_centers']
@@ -171,12 +189,19 @@ def NoiseRun_Binns(SAVEPATH,width,timein,timeeg,ybot,ytop,obj_skip):
 
     data=np.load(SAVEPATH+'Binned_Data_'+str(int(width))+'.npz')['bin_counts']
     time0=np.load(SAVEPATH+'Obs_times.npz')['times']
+    
+        
+    inds=np.isfinite(data[0,:,0])
+    time0=time0[inds]
+    data=data[:,inds,:]
+    
     n_exp=len(time0)
     n_obj=data.shape[0]
     n_bins=data.shape[2]
 
     ##
     z=(np.load(SAVEPATH+'HeaderData.npz')['airmass'])
+    z=z[inds]
     ##
     k_binns=np.empty([n_obj,n_bins])*np.nan
     for o in range(0,n_obj):
@@ -243,10 +268,19 @@ def NoiseRun_Binns(SAVEPATH,width,timein,timeeg,ybot,ytop,obj_skip):
             bg_ct=((model_inputs['binned_bg'])[o,:,b]).reshape(-1,1)
             fwhm_=(np.load(SAVEPATH+'FlattenedSpectra.npz')['gaus_params'])[o,:,:,2]#'fwhm_ar'])[0,:].reshape(-1,1)
             fwhm_=(2.*np.sqrt(2.*np.log(2.))*np.nanmedian(fwhm_,axis=1)).reshape(-1,1)
-            ones=(np.ones(n_exp)).reshape(-1,1)
+            ones=(np.ones_like(X_loc)).reshape(-1,1)
 
             time_fl=(np.copy(time0)).reshape(-1,1)  #Full Time
-            model_stack_full=np.hstack((ones,fwhm_,X_loc,Y_loc,bg_ct))  #Full Matrix
+            model_stack_full=ones
+            if xs==True:
+                model_stack_full=np.hstack((model_stack_full,X_loc))
+            if ys==True:
+                model_stack_full=np.hstack((model_stack_full,Y_loc))
+            if bg==True:
+                model_stack_full=np.hstack((model_stack_full,bg_ct))
+            if fw==True:
+                model_stack_full=np.hstack((model_stack_full,fwhm_))
+            #model_stack_full=np.hstack((ones,fwhm_,X_loc,Y_loc,bg_ct))  #Full Matrix
 
             out_index=np.array([],dtype=int)
             for t in range(0,len(time0)):
@@ -275,10 +309,10 @@ def NoiseRun_Binns(SAVEPATH,width,timein,timeeg,ybot,ytop,obj_skip):
                 LC_oott=np.append(dataf[np.where(time0<timein)],dataf[np.where(time0>timeeg)])
                 beta_arr=np.dot(np.dot(inv(np.dot(X_arr.T,X_arr)),X_arr.T),LC_oott)
             else:
-                X_arr=model_stack_full
+                X_arr=model_stack_full[inds,:]
                 beta_arr=np.dot(np.dot(inv(np.dot(X_arr.T,X_arr)),X_arr.T),dataf)
 
-            noise_model_fit=np.dot(model_stack_full,beta_arr)
+            noise_model_fit=(np.dot(model_stack_full,beta_arr))[inds]
             noise_model_save[o,b,:]=noise_model_fit
             data_clean[o,:,b]=dataf/noise_model_fit
 

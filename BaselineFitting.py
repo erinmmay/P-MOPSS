@@ -11,7 +11,7 @@ from outlier_removal import outlierr
 
 from setup import *
 
-def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,time_trim):
+def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,time_trim,time_skip):
 
     order=order
     low=olow
@@ -30,10 +30,10 @@ def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,time_
         LC=np.load(SAVEPATH+'LCwhite.npz')['data']
         err_t=np.load(SAVEPATH+'LCwhite.npz')['err_t']
         err_p=np.load(SAVEPATH+'LCwhite.npz')['err_p']
-     
-    for t in range(0,len(time0)):
-        if t>len(time0)-time_trim:
-            LC[t]=np.nan
+
+#     for t in range(0,len(time0)):
+#         if t>len(time0)-time_trim:
+#             LC[t]=np.nan
            
 
  #     for f in range(0,len(LC)):
@@ -47,11 +47,11 @@ def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,time_
                 
     LC=outlierr(LC,5,3)
     LC=outlierr(LC,5,3)
-    LC=outlierr(LC,5,3)
+#     LC=outlierr(LC,5,3)
         
     z=avg
-    oot_t0=np.empty([len(time0)/z])
-    oot_F0=np.empty([len(time0)/z])
+    oot_t0=np.empty([len(time0)/z])*np.nan
+    oot_F0=np.empty([len(time0)/z])*np.nan
     k=0
     for i in range(0,len(oot_t0)):
         oot_t0[i]=np.nanmedian(time0[k:k+z])
@@ -71,8 +71,8 @@ def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,time_
     oot_t=oot_t[~np.isnan(oot_F)]
     oot_F=oot_F[~np.isnan(oot_F)]
     
-    oot_t=oot_t[:]
-    oot_F=oot_F[:]
+    oot_t=oot_t[time_skip:len(oot_t)-time_trim]
+    oot_F=oot_F[time_skip:len(oot_F)-time_trim]
    
     test=np.polyfit(oot_t,oot_F,order)
     tests=np.poly1d(test)
@@ -135,7 +135,7 @@ def blfit_white(SAVEPATH,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,corr,time_
 
         
 def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,
-                corr,noise_white,spot,time_trim):
+                corr,noise_white,spot,time_trim,time_skip):
 
     order=order
     low=olow
@@ -166,9 +166,9 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,
     bin_arr=np.append(bin_arr,[bin_arr[-1]+width,bin_arr[-1]+2*width])
     print bin_arr
     
-    for t in range(0,len(time0)):
-        if t>len(time0)-time_trim:
-            LC_l[t,:]=np.nan
+#     for t in range(0,len(time0)):
+#         if t>len(time0)-time_trim:
+#             LC_l[t,:]=np.nan
     
     if noise_white==True:
         if spot==True:
@@ -210,7 +210,7 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,
         for b in range(0,LC_l.shape[1]):
             LC_l[:,b]/=common_white
     else:
-        common_white=np.zeros_like(LC_l[:,0])
+        common_white=np.zeros_like(LC_l[:,0])*np.nan
             
     
     
@@ -249,8 +249,8 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,
         LCb=LC_l[:,b]
         
     
-        oot_t0=np.empty([len(time0)/z])
-        oot_F0=np.empty([len(time0)/z])
+        oot_t0=np.empty([len(time0)/z])*np.nan
+        oot_F0=np.empty([len(time0)/z])*np.nan
         k=0
         for i in range(0,len(oot_t0)):
             oot_t0[i]=np.nanmedian(time0[k:k+z])
@@ -263,8 +263,8 @@ def blfit_binns(SAVEPATH,width,order,avg,olow,ohigh,ybot,ytop,timein,timeeg,
         oot_t=oot_t[~np.isnan(oot_F)]
         oot_F=oot_F[~np.isnan(oot_F)]
     
-        oot_t=oot_t[:-1]
-        oot_F=oot_F[:-1]
+        oot_t=oot_t[time_skip:len(oot_t)-time_trim]
+        oot_F=oot_F[time_skip:len(oot_F)-time_trim]
         
     
         test=np.polyfit(oot_t,oot_F,order)
