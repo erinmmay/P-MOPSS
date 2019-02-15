@@ -132,12 +132,15 @@ def BinLam(SAVEPATH,midtime,start,end,width,skip,binny,ed):
         lowi=np.argmin(np.abs(wav_arr[o,0,:]-(start-width_bin/2)))
         uppi=np.argmin(np.abs(wav_arr[o,0,:]-(end+3*width_bin/2)))
         lowi=np.nanmax([lowi-ed,0])
+        #print uppi, ed, cnt_arr.shape[2]
         uppi=np.nanmin([uppi+ed,cnt_arr.shape[2]])
-        ed=0
+        
+        #ed=0
         print bin_ctr[0]-width_bin/2,bin_ctr[-1]+width_bin/2
-        print (wav_arr[o,0,lowi-ed:uppi+ed])[0],(wav_arr[o,0,lowi-ed:uppi+ed])[-1]
+        #print wav_arr[o,0,0],wav_arr[o,0,-1]
+        print (wav_arr[o,0,lowi:uppi])[0],(wav_arr[o,0,lowi:uppi])[-1]
         for t in range(0,n_exp):
-            bin_cnt[o,t,:],bin_err[o,t,:]=spectres.spectres(bin_ctr, wav_arr[o,t,lowi-ed:uppi+ed], cnt_arr[o,t,lowi-ed:uppi+ed], spec_errs=ptn_err[o,t,lowi-ed:uppi+ed])
+            bin_cnt[o,t,:],bin_err[o,t,:]=spectres.spectres(bin_ctr, wav_arr[o,t,lowi:uppi], cnt_arr[o,t,lowi:uppi], spec_errs=ptn_err[o,t,lowi:uppi])
     
         plt.figure(1,figsize=(15,4))
         plt.clf()
