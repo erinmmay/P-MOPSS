@@ -87,7 +87,7 @@ def BinWhite(SAVEPATH,midtime,start,end,skip,binny):
     np.savez_compressed(SAVEPATH+'Binned_Data_White.npz',bins=bin_arr,bin_centers=bin_ctr,
                             bin_counts=bin_cnt,bin_err=bin_err,bin_ptn=bin_err)
 
-def BinLam(SAVEPATH,midtime,start,end,width,skip,binny):
+def BinLam(SAVEPATH,midtime,start,end,width,skip,binny,ed):
     load=np.load(SAVEPATH+'ShiftedSpec_All.npz')
     cnt_arr=load['data']
     wav_arr=load['wave']
@@ -118,13 +118,13 @@ def BinLam(SAVEPATH,midtime,start,end,width,skip,binny):
     print '       Bin Width:   ', width_bin
     
     #bin_ctr=np.append(bin_ctr[0]-width_bin,bin_ctr)
-    bin_ctr=np.append(bin_ctr,bin_ctr[-1]+width_bin)
+    #bin_ctr=np.append(bin_ctr,bin_ctr[-1]+width_bin)
     print bin_ctr
         
-    bin_cnt=np.empty([n_obj,n_exp,numbins+1])*np.nan
-    bin_err=np.empty([n_obj,n_exp,numbins+1])*np.nan
+    bin_cnt=np.empty([n_obj,n_exp,numbins])*np.nan
+    bin_err=np.empty([n_obj,n_exp,numbins])*np.nan
     
-    ed=10
+    ed=ed
     for o in range(0,n_obj):
         if o in skip:
             continue
