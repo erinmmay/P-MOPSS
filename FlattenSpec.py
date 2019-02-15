@@ -15,13 +15,13 @@ from setup import *
 from outlier_removal import outlierr_c
 from outlier_removal import outlierr_model
 
-def Gaussian_P(x,a,b,c,x0,x1):
-    return a*np.exp(-((x-b)**2.)/(2.*c**2.))+(x0*x)+x1
+def Gaussian_P(x,a,b,c,curv,slop,inte):
+    return a*np.exp(-((x-b)**2.)/(2.*c**2.))+(curv**x*x)*(slop*x)+inte
 
 
-def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,fb,Lflat,Ldark,CON,
+def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,fb,Lflat,Ldark,CON,LVAR,
                 ks_b,sig_b,ks_d,sig_d,ks_s,sig_s,ing_fwhm,ver_full,ver_fit,ver_spec,ver_xcen,
-                data_corr,trip,time_start,time_trim,obj_skip,reloadd,saver,r_skip,a_s,a_d):
+                data_corr,nruns,time_start,time_trim,obj_skip,reloadd,saver,r_skip,a_s,a_d):
     #extray= number of pixels in y direction extra that were extracted
     #SAVEPATH= location of saved 2D spec
     #ed_l= location of lower boundary between background/data - only used for initial guess of centroid
@@ -56,7 +56,7 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,fb,Lflat,Ldark,CON,
 #     if Lflat==True:
 #         flat_var=np.load(SAVEPATH+'Flats.npz')['var']
         
-    fit_params=np.empty([n_obj,n_exp,2*ypixels/binny+ygap,5])*np.nan
+    fit_params=np.empty([n_obj,n_exp,2*ypixels/binny+ygap,6])*np.nan
     fwhm_data=np.empty([n_obj,n_exp])*np.nan
     flat_spec=np.empty([n_obj,n_exp,2*ypixels/binny+ygap])*np.nan
     flat_bkgd=np.empty([n_obj,n_exp,2*ypixels/binny+ygap])*np.nan
@@ -138,7 +138,9 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,fb,Lflat,Ldark,CON,
                 ## FIT IN COMBINATION -- polynomial and gaussian ##
                 p0=np.array([(np.nanmax(row_data[ed_l:xwidth-ed_u])-np.nanmedian(row_data[ed_t:ed_l])),
                              xpix_ar[np.argmax(row_data[ed_l:xwidth-ed_u])]+ed_l,
-                             ing_fwhm,0.0,
+                             ing_fwhm,
+                             0.0,
+                             0.0,
                              np.nanmedian(row_data[ed_t:ed_l])])
                 #check S/N of row:
                 if np.nanmax(row_data[ed_l:xwidth-ed_u])<2.0*np.sqrt(np.nanmedian(row_data[ed_t:ed_l])):
@@ -187,33 +189,40 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,fb,Lflat,Ldark,CON,
                     ned_u=xwidth
                 #print t,j, ned_l,ned_u
         
-                nxpix_ar=np.append(xpix_ar[:ned_l],xpix_ar[ned_u:])
-                nrow_data=np.append(row_data[:ned_l],row_data[ned_u:])
+                nxpix_arb=np.append(xpix_ar[:ned_l],xpix_ar[ned_u:])
+                nrow_datab=np.append(row_data[:ned_l],row_data[ned_u:])
                 
-                model=Gaussian_P(nxpix_ar,*fit_params[i,t,j+y_start,:])
+                model=Gaussian_P(nxpix_arb,*fit_params[i,t,j+y_start,:])
 #                 plt.figure(201,figsize=(10,10))
 #                 plt.plot(xpix_ar,row_data,color='black',linewidth=5.0)
 #                 plt.plot(nxpix_ar,model,color='red',linewidth=2.0)
 #                 plt.show()
-                c1=0
-                c2=0
-                c3=0
-                c1,row_data_1=outlierr_c(np.copy(nrow_data),ks_b,sig_b)
-                c2,row_data_2=outlierr_c(np.copy(row_data_1),ks_b,sig_b)
-                if trip==True:
-                    c3,row_data_3=outlierr_c(np.copy(row_data_2),ks_b,sig_b)
-                    row_data[:ned_l]=np.copy(row_data_3[:ned_l])
-                    row_data[ned_u:]=np.copy(row_data_3[ned_l:])
-                    tr=c1+c2+c3
-                else:
-                    row_data[:ned_l]=np.copy(row_data_2[:ned_l])
-                    row_data[ned_u:]=np.copy(row_data_2[ned_l:])
-                    tr=c1+c2
+                nrunsc=0
+                tr=0
+                row_saveb=np.empty([nrow_datab.shape,nruns+1])*0.0
+                row_saveb[:,0]=nrow_datab
+                while nrunsc<nruns:
+                    c1=0
+                    c1,row_saveb[:,nrunsc+1]=outlierr_c(np.copy(nrow_saveb[:,nrunsc]),ks_b,sig_b)
+                    tr+=c1
+                    nrunsc+=1
+                row_data[:ned_l]=np.copy(row_saveb[:ned_l,-1])
+                row_data[ned_u:]=np.copy(row_saveb[ned_l:,-1])
+                    #c2,row_data_2=outlierr_c(np.copy(row_data_1),ks_b,sig_b)
+#                 if trip==True:
+#                     c3,row_data_3=outlierr_c(np.copy(row_data_2),ks_b,sig_b)
+#                     row_data[:ned_l]=np.copy(row_data_3[:ned_l])
+#                     row_data[ned_u:]=np.copy(row_data_3[ned_l:])
+#                     tr=c1+c2+c3
+#                else:
+#                    row_data[:ned_l]=np.copy(row_data_2[:ned_l])
+#                    row_data[ned_u:]=np.copy(row_data_2[ned_l:])
+#                    tr=c1+c2
                 ### refit- model ###
                 ## FIT IN COMBINATION -- polynomial and gaussian ##
                 p0=np.array([(np.nanmax(row_data[ed_l:xwidth-ed_u])-np.nanmedian(row_data[ed_t:ed_l])),
                              xpix_ar[np.argmax(row_data[ed_l:xwidth-ed_u])]+ed_l,
-                             ing_fwhm,0.0,
+                             ing_fwhm,0.0,0.0,
                              np.nanmedian(row_data[ed_t:ed_l])])
                 try:
                     g_param,g_cov=curve_fit(Gaussian_P,xpix_ar,row_data,p0=p0,maxfev=100000)
@@ -234,35 +243,44 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,fb,Lflat,Ldark,CON,
                         ned_u=xwidth
                     #print t,j, ned_l,ned_u
 
-                    nxpix_ar=np.copy(xpix_ar[ned_l:ned_u])
-                    nrow_data=np.copy(row_data[ned_l:ned_u])
+                    nxpix_ard=np.copy(xpix_ar[ned_l:ned_u])
+                    nrow_datad=np.copy(row_data[ned_l:ned_u])
 
-                    model=Gaussian_P(nxpix_ar,*fit_params[i,t,j+y_start,:])
+                    model=Gaussian_P(nxpix_ard,*fit_params[i,t,j+y_start,:])
     #                 plt.figure(201,figsize=(10,10))
     #                 plt.plot(xpix_ar,row_data,color='black',linewidth=5.0)
     #                 plt.plot(nxpix_ar,model,color='red',linewidth=2.0)
     #                 plt.show()
-                    c1=0
-                    c2=0
-                    c3=0
-                    c1,row_data_1=outlierr_model(np.copy(nrow_data),model,ks_d,sig_d)
-                    c2,row_data_2=outlierr_model(np.copy(row_data_1),model,ks_d,sig_d)
-                    if trip==True:
-                        c3,row_data_3=outlierr_model(np.copy(row_data_2),model,ks_d,sig_d)
-                        row_data[ned_l:ned_u]=np.copy(row_data_3)
-                        n=c1+c2+c3
-                        tr+=n
-                    else:
-                        row_data[ned_l:ned_u]=np.copy(row_data_2)
-                        n=(c1+c2)
-                        tr+=n
+                    nrunsc=0
+                    row_saved=np.empty([nrow_datad.shape,nruns+1])*0.0
+                    row_saved[:,0]=nrow_datad
+                    trd=0
+     #               c1=0
+     #               c2=0
+     #               c3=0
+                    while nrunsc<nruns:
+                        c1=0
+                        c1,row_saved[:,runsc+1]=outlierr_model(np.copy(nrow_saved[:,runcs]),model,ks_d,sig_d)
+                        trd+=c1
+                        nrunsc+=1
+                    row_data[ned_l:ned_u]=np.copy(row_saved[:,-1])
+     #               c2,row_data_2=outlierr_model(np.copy(row_data_1),model,ks_d,sig_d)
+     #               if trip==True:
+     #                   c3,row_data_3=outlierr_model(np.copy(row_data_2),model,ks_d,sig_d)
+     #                   row_data[ned_l:ned_u]=np.copy(row_data_3)
+     #                   n=c1+c2+c3
+     #                   tr+=n
+     #               else:
+     #                   row_data[ned_l:ned_u]=np.copy(row_data_2)
+     #                   n=(c1+c2)
+     #                   tr+=n
                         
                     ### refit- model ###
                     ## FIT IN COMBINATION -- polynomial and gaussian ##
                     p0=np.array([(np.nanmax(row_data[ed_l:xwidth-ed_u])-
                                   np.nanmedian(row_data[ed_t:ed_l])),
                                  xpix_ar[np.argmax(row_data[ed_l:xwidth-ed_u])]+ed_l,
-                                 ing_fwhm,0.0,
+                                 ing_fwhm,0.0,0.0,
                                  np.nanmedian(row_data[ed_t:ed_l])])
                     try:
                         g_param,g_cov=curve_fit(Gaussian_P,xpix_ar,row_data,p0=p0,maxfev=100000)
@@ -274,9 +292,11 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,fb,Lflat,Ldark,CON,
                 
                 if ver_fit==True:
                     if t%10==0:
-                        ax[1].plot(nxpix_ar,row_data_1,color='grey',linewidth=2.0)
-                        if trip==True:
-                            ax[1].plot(nxpix_ar,row_data_2,color='grey',linewidth=2.0)
+                        for n in range(1,nruns):
+                            ax[1].plot(nxpix_ard,row_saved[:,d],color='grey',linewidth=2.0)
+                            ax[1].plot(nxpix_arb,row_saveb[:,d],color='grey',linewidth=2.0)
+                        #if trip==True:
+                        #    ax[1].plot(nxpix_ar,row_data_2,color='grey',linewidth=2.0)
                         ax[1].plot(xpix_ar,row_data,color='black',linewidth=4.0)
                         ax[1].plot(xpix_ar,Gaussian_P(xpix_ar,*fit_params[i,t,j+y_start,:]),
                                    color='cyan',linewidth=2.0)
@@ -286,13 +306,15 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,fb,Lflat,Ldark,CON,
                         ax[1].axvline(x=fit_params[i,t,j+y_start,1]+a_s*fit_params[i,t,j+y_start,2],
                                       color='tomato',linewidth=1.0) 
                         ax[1].set_xlim(0,xwidth)
-                        plt.figtext(0.2,0.4,tr,fontsize=20)                          
+                        plt.figtext(0.2,0.4,tr,fontsize=20,color='black')  
+                        plt.figtext(0.3,0.4,trd,fontsize=20,color='blue')   
                         plt.show(block=False)
                         plt.close()
                         
                 
                         
-                bkgd_sv[t,j+y_start,:]=fit_params[i,t,j+y_start,3]*xpix_ar+fit_params[i,t,j+y_start,4]
+                bkgd_sv[t,j+y_start,:]=(fit_params[i,t,j+y_start,3]*xpix_ar*xpix_ar + 
+                                        fit_params[i,t,j+y_start,4]*xpix_ar+fit_params[i,t,j+y_start,5])
                 sub_bkgd[t,j+y_start,:]=row_data-bkgd_sv[t,j+y_start,:]
                 frame[j,:]=row_data
                 plt_data[j+y_start,:]=row_data-bkgd_sv[t,j+y_start,:]
@@ -336,8 +358,12 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,fb,Lflat,Ldark,CON,
             ###################################################
              # flatten spec....  
             for j in range(0,n_rows):
-                lowi=int(np.nanmax([fit_params[i,t,j+y_start,1]-a_s*fwhm_data[i,t],0]))
-                uppi=int(np.nanmin([fit_params[i,t,j+y_start,1]+a_s*fwhm_data[i,t],xwidth]))
+                if LVAR==False:
+                    lowi=int(np.nanmax([fit_params[i,t,j+y_start,1]-a_s*fwhm_data[i,t],0]))
+                    uppi=int(np.nanmin([fit_params[i,t,j+y_start,1]+a_s*fwhm_data[i,t],xwidth]))
+                else:
+                    lowi=int(np.nanmax([fit_params[i,t,j+y_start,1]-a_s*fit_params[i,t,j+y_start,2],0]))
+                    uppi=int(np.nanmin([fit_params[i,t,j+y_start,1]+a_s*fit_params[i,t,j+y_start,2],xwidth]))
                 #lowi=int(np.nanmax([fit_params[i,t,j+y_start,1]-a_s*fit_params[i,t,j+y_start,2],0]))
                 #uppi=int(np.nanmin([fit_params[i,t,j+y_start,1]+a_s*fit_params[i,t,j+y_start,2],xwidth]))
                 flat_spec[i,t,j+y_start]=np.nansum(sub_bkgd[t,j+y_start,lowi:uppi])
