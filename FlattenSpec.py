@@ -44,7 +44,7 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,fb,Lflat,Ldark,CON,LV
     ###########################################
     PARAMS=[extray,ed_l,ed_u,ed_t,binnx,binny,Lflat,Ldark,CON,
                 ks_b,sig_b,ks_d,sig_d,ks_s,sig_s,ing_fwhm,ver_full,ver_fit,ver_spec,
-                data_corr,trip,time_start,time_trim,a_s,a_d]
+                data_corr,nruns,time_start,time_trim,a_s,a_d]
     
     n_obj=int(np.load(SAVEPATH+'FinalMasks.npz')['masks'].shape[0])
     n_exp=np.load(SAVEPATH+'HeaderData.npz')['n_exp']
@@ -199,11 +199,11 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,fb,Lflat,Ldark,CON,LV
 #                 plt.show()
                 nrunsc=0
                 tr=0
-                row_saveb=np.empty([nrow_datab.shape,nruns+1])*0.0
+                row_saveb=np.empty([nrow_datab.shape[0],nruns+1])*0.0
                 row_saveb[:,0]=nrow_datab
                 while nrunsc<nruns:
                     c1=0
-                    c1,row_saveb[:,nrunsc+1]=outlierr_c(np.copy(nrow_saveb[:,nrunsc]),ks_b,sig_b)
+                    c1,row_saveb[:,nrunsc+1]=outlierr_c(np.copy(row_saveb[:,nrunsc]),ks_b,sig_b)
                     tr+=c1
                     nrunsc+=1
                 row_data[:ned_l]=np.copy(row_saveb[:ned_l,-1])
@@ -252,7 +252,7 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,fb,Lflat,Ldark,CON,LV
     #                 plt.plot(nxpix_ar,model,color='red',linewidth=2.0)
     #                 plt.show()
                     nrunsc=0
-                    row_saved=np.empty([nrow_datad.shape,nruns+1])*0.0
+                    row_saved=np.empty([nrow_datad.shape[0],nruns+1])*0.0
                     row_saved[:,0]=nrow_datad
                     trd=0
      #               c1=0
@@ -260,7 +260,7 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,fb,Lflat,Ldark,CON,LV
      #               c3=0
                     while nrunsc<nruns:
                         c1=0
-                        c1,row_saved[:,runsc+1]=outlierr_model(np.copy(nrow_saved[:,runcs]),model,ks_d,sig_d)
+                        c1,row_saved[:,nrunsc+1]=outlierr_model(np.copy(row_saved[:,nrunsc]),model,ks_d,sig_d)
                         trd+=c1
                         nrunsc+=1
                     row_data[ned_l:ned_u]=np.copy(row_saved[:,-1])
@@ -374,9 +374,9 @@ def FlattenSpec(extray,SAVEPATH,ed_l,ed_u,ed_t,binnx,binny,fb,Lflat,Ldark,CON,LV
             rm_s+=rm_s_a
             rm_s_a,flat_spec[i,t,:]=outlierr_c(np.copy(flat_spec[i,t,:]),ks_s,sig_s)
             rm_s+=rm_s_a
-            if trip==True:
-                rm_s_a,flat_spec[i,t,:]=outlierr_c(np.copy(flat_spec[i,t,:]),ks_s,sig_s)
-                rm_s+=rm_s_a
+            #if trip==True:
+            #    rm_s_a,flat_spec[i,t,:]=outlierr_c(np.copy(flat_spec[i,t,:]),ks_s,sig_s)
+            #    rm_s+=rm_s_a
         
         if ver_spec==True:
             norm=matplotlib.colors.Normalize(vmin=0,vmax=n_exp)
