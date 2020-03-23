@@ -13,8 +13,8 @@ import matplotlib.gridspec as gridsec
 from setup import *
 
 
-def BinWhite(SAVEPATH,midtime,start,end,skip,binny):
-    load=np.load(SAVEPATH+'ShiftedSpec_All.npz')
+def BinWhite(SAVEPATH,midtime,start,end,skip,binny,CON,ap0):
+    load=np.load(SAVEPATH+'ShiftedSpec_All_CON'+str(CON)+'_AP'+str(int(ap0*100)).zfill(3)+'.npz')
     cnt_arr=load['data']
     #cnt_arr=load['convolved']
     wav_arr=load['wave']
@@ -84,11 +84,12 @@ def BinWhite(SAVEPATH,midtime,start,end,skip,binny):
         plt.show()
         plt.close()
         
-    np.savez_compressed(SAVEPATH+'Binned_Data_White.npz',bins=bin_arr,bin_centers=bin_ctr,
+    np.savez_compressed(SAVEPATH+'Binned_Data_White_CON'+str(CON)+'_AP'+str(int(ap0*100)).zfill(3)+'.npz',
+                        bins=bin_arr,bin_centers=bin_ctr,
                             bin_counts=bin_cnt,bin_err=bin_err,bin_ptn=bin_err)
 
-def BinLam(SAVEPATH,midtime,start,end,width,skip,binny,ed):
-    load=np.load(SAVEPATH+'ShiftedSpec_All.npz')
+def BinLam(SAVEPATH,midtime,start,end,width,skip,binny,ed,CON,ap0):
+    load=np.load(SAVEPATH+'ShiftedSpec_All_CON'+str(CON)+'_AP'+str(int(ap0*100)).zfill(3)+'.npz')
     cnt_arr=load['data']
     wav_arr=load['wave']
     del load
@@ -158,6 +159,7 @@ def BinLam(SAVEPATH,midtime,start,end,width,skip,binny,ed):
         plt.show()
         plt.close()
         
-    np.savez_compressed(SAVEPATH+'Binned_Data_'+str(int(width_bin))+'.npz',bins=bin_arr,bin_centers=bin_ctr,
+    np.savez_compressed(SAVEPATH+'Binned_Data_'+str(int(width_bin))+'_CON'+str(CON)+'_AP'+str(int(ap0*100)).zfill(3)+'.npz',
+                        bins=bin_arr,bin_centers=bin_ctr,
                             bin_counts=bin_cnt,bin_err=bin_err,bin_ptn=bin_err)
 

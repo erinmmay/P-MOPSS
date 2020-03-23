@@ -22,11 +22,11 @@ from setup import *
 def func_gaus(x,sigma):
     return 1.0-np.exp(-(1./2.)*(x/(sigma))**2.)
 
-def AlignSpec(gris,osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,
+def AlignSpec(gris,osr,CON, ap0, fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,
               ex,binny,ver,ver_l,time_trim,skip):
     masks=np.load(SAVEPATH+'FinalMasks.npz')['masks']
 
-    input_data=np.load(SAVEPATH+'FlattenedSpectra.npz')['flat_spec']
+    input_data=np.load(SAVEPATH+'FlattenedSpectra_CON'+str(CON)+'_AP'+str(int(ap0*100)).zfill(3)+'.npz')['flat_spec']
     n_obj=input_data.shape[0]
     n_exp=input_data.shape[1]
     n_pix=input_data.shape[2]
@@ -145,7 +145,7 @@ def AlignSpec(gris,osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,
                 cnv_data[o,t,:]=np.convolve(np.nan_to_num(ovs_data[o,t,:]),gaus_cnv,mode='same')
             
         else:
-            fwhm_arr=(np.load(SAVEPATH+'FlattenedSpectra.npz')['gaus_params'])[o,:,:,2]
+            fwhm_arr=np.load(SAVEPATH+'2DFit_Obj0.npz')['gaus'][:,:,2] 
             fwhm_arr=(2.*np.sqrt(2.*np.log(2.))*np.nanmedian(fwhm_arr,axis=1))
             #fwhm=fwhm_arr[o,t]
             print(fwhm_arr)
@@ -449,6 +449,6 @@ def AlignSpec(gris,osr,fwhm_s,fwhm_t,ks,olv,wavelength_path,obj_name,SAVEPATH,
         plt.xlabel('Wavelength, [A]',fontsize=15)
         plt.show(block=False)
     
-    np.savez_compressed(SAVEPATH+'ShiftedSpec_All.npz',
+    np.savez_compressed(SAVEPATH+'ShiftedSpec_All_CON'+str(CON)+'_AP'+str(int(ap0*100)).zfill(3)+'.npz',
                             data=input_data,pixels=shift_pixels,wave=wav_ar,yshift=y_shift)
 

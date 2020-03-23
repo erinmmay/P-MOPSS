@@ -6,19 +6,19 @@ import matplotlib.pyplot as plt
 
 from setup import *
 
-def LCgen_white(SAVEPATH,corr,Cals_ind,csn):
+def LCgen_white(SAVEPATH,corr,Cals_ind,csn, CON, ap0):
     es=1.
     
     if corr==True:
         Data=np.load(SAVEPATH+'NoiseModel_FitResults_White.npz')['data']
-        Data_c=(np.load(SAVEPATH+'Binned_Data_White.npz')['bin_counts'])[:,:,0]
+        Data_c=(np.load(SAVEPATH+'Binned_Data_White_CON'+str(CON)+'_AP'+str(int(ap0*100)).zfill(3)+'.npz')['bin_counts'])[:,:,0]
     else:
         #Data=(np.load(SAVEPATH+'AirmassRemove_White.npz')['data'])
-        Data=(np.load(SAVEPATH+'Binned_Data_White.npz')['bin_counts'])[:,:,0]
-        Data_c=(np.load(SAVEPATH+'Binned_Data_White.npz')['bin_counts'])[:,:,0]
+        Data=(np.load(SAVEPATH+'Binned_Data_White_CON'+str(CON)+'_AP'+str(int(ap0*100)).zfill(3)+'.npz')['bin_counts'])[:,:,0]
+        Data_c=(np.load(SAVEPATH+'Binned_Data_White_CON'+str(CON)+'_AP'+str(int(ap0*100)).zfill(3)+'.npz')['bin_counts'])[:,:,0]
         airmass_func=Data/Data_c
-    errsw_t=(np.load(SAVEPATH+'Binned_Data_White.npz')['bin_err'])[:,:,0]
-    errsw_p=(np.load(SAVEPATH+'Binned_Data_White.npz')['bin_ptn'])[:,:,0]
+    errsw_t=(np.load(SAVEPATH+'Binned_Data_White_CON'+str(CON)+'_AP'+str(int(ap0*100)).zfill(3)+'.npz')['bin_err'])[:,:,0]
+    errsw_p=(np.load(SAVEPATH+'Binned_Data_White_CON'+str(CON)+'_AP'+str(int(ap0*100)).zfill(3)+'.npz')['bin_ptn'])[:,:,0]
     
    
 
@@ -111,25 +111,30 @@ def LCgen_white(SAVEPATH,corr,Cals_ind,csn):
     #ax[1].set_ylabel('Relative Flux')
 
     plt.show()
-    np.savez_compressed(SAVEPATH+'LCwhite.npz',data=LC,cs=CS,time=time0,err_t=errs_cw_t,err_p=errs_cw_p)
+    np.savez_compressed(SAVEPATH+'LCwhite_CON'+str(CON)+'_AP'+str(int(ap0*100)).zfill(3)+'.npz'
+                        ,data=LC,cs=CS,time=time0,err_t=errs_cw_t,err_p=errs_cw_p)
     return
         
-def LCgen_binns(SAVEPATH,width,corr,Cals_ind,csn):
+def LCgen_binns(SAVEPATH,width,corr,Cals_ind,csn, CON, ap0):
     es=1.
     
     if corr==True:
         Datal=np.load(SAVEPATH+'NoiseModel_FitResults_'+str(int(width))+'.npz')['data']
     else:
         #Datal=np.load(SAVEPATH+'AirmassRemove_'+str(int(width))+'.npz')['data']
-        Datal=np.load(SAVEPATH+'Binned_Data_'+str(int(width))+'.npz')['bin_counts']
-        Datal_c=np.load(SAVEPATH+'Binned_Data_'+str(int(width))+'.npz')['bin_counts']
-    errs_t=np.load(SAVEPATH+'Binned_Data_'+str(int(width))+'.npz')['bin_err']
-    errs_p=np.load(SAVEPATH+'Binned_Data_'+str(int(width))+'.npz')['bin_ptn']
+        Datal=np.load(
+            SAVEPATH+'Binned_Data_'+str(int(width))+'_CON'+str(CON)+'_AP'+str(int(ap0*100)).zfill(3)+'.npz')['bin_counts']
+        Datal_c=np.load(
+            SAVEPATH+'Binned_Data_'+str(int(width))+'_CON'+str(CON)+'_AP'+str(int(ap0*100)).zfill(3)+'.npz')['bin_counts']
+    errs_t=np.load(SAVEPATH+'Binned_Data_'+str(int(width))+'_CON'+str(CON)+'_AP'+str(int(ap0*100)).zfill(3)+'.npz')['bin_err']
+    errs_p=np.load(SAVEPATH+'Binned_Data_'+str(int(width))+'_CON'+str(CON)+'_AP'+str(int(ap0*100)).zfill(3)+'.npz')['bin_ptn']
     
     time0=np.load(SAVEPATH+'Obs_times.npz')['times']
     
-    bin_arr=np.load(SAVEPATH+'Binned_Data_'+str(int(width))+'.npz')['bins']
-    bin_ctr=np.load(SAVEPATH+'Binned_Data_'+str(int(width))+'.npz')['bin_centers']
+    bin_arr=np.load(
+        SAVEPATH+'Binned_Data_'+str(int(width))+'_CON'+str(CON)+'_AP'+str(int(ap0*100)).zfill(3)+'.npz')['bins']
+    bin_ctr=np.load(
+        SAVEPATH+'Binned_Data_'+str(int(width))+'_CON'+str(CON)+'_AP'+str(int(ap0*100)).zfill(3)+'.npz')['bin_centers']
     width=bin_arr[1]-bin_arr[0]
 
     print(bin_arr)
@@ -217,7 +222,7 @@ def LCgen_binns(SAVEPATH,width,corr,Cals_ind,csn):
     
         plt.show()
 
-    np.savez_compressed(SAVEPATH+'LC_bins_'+str(int(width))+'.npz',
+    np.savez_compressed(SAVEPATH+'LC_bins_'+str(int(width))+'_CON'+str(CON)+'_AP'+str(int(ap0*100)).zfill(3)+'.npz',
                             data=LC_l,cs=CS_l,time=time0,bin_ctr=bin_ctr,err_t=errs_cl_t,err_p=errs_cl_p)
     return
       
