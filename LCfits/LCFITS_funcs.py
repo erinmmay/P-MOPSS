@@ -115,9 +115,9 @@ def lc_plot(t,model,params,data,data_err,savename,color,figtext,par_n,ful_par_c,
     
     sdnr = np.std(residuals)*10**6.
     ###
-    plt.figtext(0.65,0.3,'$\chi^2$ = ' + str(np.round(chisq_red,4)), fontsize=20)
-    plt.figtext(0.65,0.28,'BIC = ' + str(np.round(BIC,4)), fontsize=20)
-    plt.figtext(0.65,0.26,'sdnr = ' + str(np.round(sdnr,2)), fontsize=20)
+    plt.figtext(0.65,0.19,'$\chi^2$ = ' + str(np.round(chisq_red,4)), fontsize=20)
+    plt.figtext(0.65,0.17,'BIC = ' + str(np.round(BIC,4)), fontsize=20)
+    plt.figtext(0.65,0.15,'sdnr = ' + str(np.round(sdnr,2)), fontsize=20)
     #plt.figtext(0.25,0.90,figtext,fontsize=35,weight='bold')
 
     plt.savefig(savename)
