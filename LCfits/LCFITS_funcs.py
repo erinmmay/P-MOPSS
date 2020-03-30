@@ -108,7 +108,7 @@ def lc_plot(t,model,params,data,data_err,savename,color,figtext,par_n,ful_par_c,
     
     
     ###
-    residuals=lcf-LC/(noise*basel)
+    residuals=lcf*basel*noise-LC
     chisq_red=(np.nansum(residuals**2./data_err**2.))/(len(residuals)-len(fit_inds))
     #print('              ...testttt:',np.nanmedian(err_ptn),np.nanmedian(residuals))
     BIC=(np.nansum(residuals**2./data_err**2.))+len(fit_inds)*np.log10(len(residuals))
